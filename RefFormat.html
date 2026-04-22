@@ -1610,12 +1610,16 @@ Year: {year}
     const text = input.value.trim();
     if (!text) return;
 
-    // 1) Load any existing BibTeX cache
+    // 1) Reload resolved refs from the BibTeX cache in the textarea (source of truth).
+    //    Clear the in-memory cache so edits the user made to the cache block are
+    //    reflected in the output instead of being masked by stale internal state.
+    fetchedMeta = {};
+    abstracts = {};
     const [, bibBlock] = splitBibtex(text);
     if (bibBlock) {
       const cached = parseBibtexBlock(bibBlock);
       for (const [rkey, meta] of cached) {
-        if (!fetchedMeta[rkey]) fetchedMeta[rkey] = meta;
+        fetchedMeta[rkey] = meta;
       }
     }
 
