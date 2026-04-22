@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<title>Qubit Rotation Visualizer — SU(2) & SO(3)</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: system-ui, -apple-system, Segoe UI, sans-serif; background: #0a0a15; color: #e0e0e0; overflow: hidden; }
+  #app { display: grid; grid-template-columns: 320px 1fr 420px; height: 100vh; }
+  .panel { padding: 18px 20px; overflow-y: auto; }
+  #left { background: #12121e; border-right: 1px solid #2a2a40; }
+  #right { background: #12121e; border-left: 1px solid #2a2a40; }
+  #center { position: relative; }
+  #canvas-container { width: 100%; height: 100%; cursor: grab; }
+  #canvas-container:active { cursor: grabbing; }
+  h1 { font-size: 17px; margin: 0 0 18px 0; color: #8ab4f8; }
+  h2 { font-size: 12px; margin: 20px 0 8px 0; color: #8a8ab0; text-transform: uppercase; letter-spacing: 1.3px; font-weight: 600; }
+  .slider-group { margin-bottom: 12px; }
+  .slider-label { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 4px; }
+  .slider-label .val { color: #8ab4f8; font-family: 'SF Mono', Consolas, monospace; }
+  input[type=range] { width: 100%; accent-color: #8ab4f8; }
+  .matrix { background: #1a1a2e; padding: 10px 12px; border-radius: 6px; margin-bottom: 12px; }
+  .matrix-title { color: #8ab4f8; font-weight: 600; margin-bottom: 6px; font-size: 12px; }
+  .mat-table { border-collapse: collapse; margin: 0 auto; font-family: 'SF Mono', Consolas, monospace; font-size: 12px; }
+  .mat-table td { padding: 3px 10px; text-align: right; min-width: 70px; }
+  .mat-wrap { display: flex; align-items: stretch; }
+  .bracket { width: 6px; border: 1px solid #4a4a6a; }
+  .bracket.l { border-right: none; border-radius: 3px 0 0 3px; }
+  .bracket.r { border-left: none; border-radius: 0 3px 3px 0; }
+  .complex { color: #e6c07b; }
+  .real { color: #98c379; }
+  .axis-vec { font-family: 'SF Mono', Consolas, monospace; font-size: 12px; color: #c678dd; margin-top: 4px; }
+  .info { font-size: 11px; color: #888; line-height: 1.6; margin-top: 14px; border-left: 2px solid #3a3a50; padding-left: 10px; }
+  button { background: #2a2a40; color: #e0e0e0; border: 1px solid #3a3a50; padding: 5px 10px; border-radius: 4px; cursor: pointer; margin: 0 4px 4px 0; font-size: 12px; transition: background .15s; }
+  button:hover { background: #3a3a58; }
+  .legend { font-size: 11px; color: #aaa; margin-top: 8px; }
+  .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; vertical-align: middle; margin-right: 5px; }
+  #hint { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); font-size: 11px; color: #666; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="left" class="panel">
+    <h1>Qubit Rotation Visualizer</h1>
+
+    <h2>Rotationsachse n̂</h2>
+    <div class="slider-group">
+      <div class="slider-label"><span>θ (polar)</span><span class="val" id="th-val">90°</span></div>
+      <input type="range" id="th" min="0" max="180" value="90" step="1">
+    </div>
+    <div class="slider-group">
+      <div class="slider-label"><span>φ (azimut)</span><span class="val" id="ph-val">0°</span></div>
+      <input type="range" id="ph" min="0" max="360" value="0" step="1">
+    </div>
+    <div class="axis-vec" id="n-vec">n̂ = (1.00, 0.00, 0.00)</div>
+
+    <h2>Rotationswinkel α</h2>
+    <div class="slider-group">
+      <div class="slider-label"><span>α</span><span class="val" id="al-val">90°</span></div>
+      <input type="range" id="al" min="0" max="720" value="90" step="1">
+    </div>
+
+    <h2>Anfangszustand |ψ⟩</h2>
+    <div class="slider-group">
+      <div class="slider-label"><span>θ_ψ</span><span class="val" id="ths-val">0°</span></div>
+      <input type="range" id="ths" min="0" max="180" value="0" step="1">
+    </div>
+    <div class="slider-group">
+      <div class="slider-label"><span>φ_ψ</span><span class="val" id="phs-val">0°</span></div>
+      <input type="range" id="phs" min="0" max="360" value="0" step="1">
+    </div>
+
+    <h2>Presets</h2>
+    <div>
+      <button onclick="setPreset('X')">X (π,x̂)</button>
+      <button onclick="setPreset('Y')">Y (π,ŷ)</button>
+      <button onclick="setPreset('Z')">Z (π,ẑ)</button>
+    </div>
+    <div>
+      <button onclick="setPreset('H')">H</button>
+      <button onclick="setPreset('S')">S (π/2)</button>
+      <button onclick="setPreset('T')">T (π/4)</button>
+    </div>
+    <div style="margin-top:8px">
+      <button onclick="animate2pi()">▶ 0 → 4π</button>
+      <button onclick="resetAll()">Reset</button>
+    </div>
+
+    <div class="legend">
+      <div><span class="dot" style="background:#c678dd"></span>Rotationsachse n̂</div>
+      <div><span class="dot" style="background:#ffffff"></span>Anfangszustand r</div>
+      <div><span class="dot" style="background:#ffd700"></span>Endzustand r' = R·r</div>
+    </div>
+
+    <div class="info">
+      Passe Achse (θ, φ) und Winkel α an. Rechts werden die SU(2)-Matrix U (wirkt auf den Spinor) und die SO(3)-Matrix R (wirkt auf den Bloch-Vektor) berechnet. Die 2→1-Homomorphie: α und α+2π liefern dieselbe SO(3)-Rotation, aber U bekommt einen Vorzeichenwechsel.
+    </div>
+  </div>
+
+  <div id="center">
+    <div id="canvas-container"></div>
+    <div id="hint">Ziehen zum Drehen · Scrollen zum Zoomen</div>
+  </div>
+
+  <div id="right" class="panel">
+    <h2>SU(2) — Spinor-Operator</h2>
+    <div class="matrix">
+      <div class="matrix-title">U = exp(−i α/2 · n̂·σ̂)  ∈  SU(2)</div>
+      <div class="mat-wrap"><div class="bracket l"></div><table class="mat-table" id="su2-mat"></table><div class="bracket r"></div></div>
+    </div>
+    <div class="matrix">
+      <div class="matrix-title">|ψ'⟩ = U |ψ⟩</div>
+      <div class="mat-wrap"><div class="bracket l"></div><table class="mat-table" id="psi-mat"></table><div class="bracket r"></div></div>
+    </div>
+    <div class="matrix">
+      <div class="matrix-title">Aktueller Zustand (Vektorsumme)</div>
+      <div id="state-sum" style="font-family:'SF Mono',Consolas,monospace;font-size:13px;color:#e6c07b;text-align:center;padding:4px 0 2px 0;line-height:1.7"></div>
+      <div id="state-sum-init" style="font-family:'SF Mono',Consolas,monospace;font-size:11px;color:#888;text-align:center;padding-top:4px;line-height:1.6"></div>
+    </div>
+
+    <h2>SO(3) — Bloch-Rotation</h2>
+    <div class="matrix">
+      <div class="matrix-title">R = exp(α [n̂]×)  (Rodrigues)  ∈  SO(3)</div>
+      <div class="mat-wrap"><div class="bracket l"></div><table class="mat-table" id="so3-mat"></table><div class="bracket r"></div></div>
+    </div>
+    <div class="matrix">
+      <div class="matrix-title">r' = R r  (Bloch-Vektor)</div>
+      <div class="mat-wrap"><div class="bracket l"></div><table class="mat-table" id="r-mat"></table><div class="bracket r"></div></div>
+    </div>
+
+    <div class="info">
+      <b>Kovarianter Zusammenhang:</b> U σ̂<sub>i</sub> U† = Σ<sub>j</sub> R<sub>ji</sub> σ̂<sub>j</sub>. Der Homomorphismus SU(2) → SO(3) ist 2:1: ±U bilden auf dasselbe R ab. Sichtbar, wenn α von 0 nach 4π animiert wird — R kehrt nach 2π zurück, U erst nach 4π.
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+// ======== Komplex-Arithmetik ========
+const cx = (re, im) => ({re, im});
+const cxAdd = (a,b) => cx(a.re+b.re, a.im+b.im);
+const cxMul = (a,b) => cx(a.re*b.re - a.im*b.im, a.re*b.im + a.im*b.re);
+function cxStr(a){
+  const r = Math.abs(a.re)<1e-9?0:a.re;
+  const i = Math.abs(a.im)<1e-9?0:a.im;
+  if (i===0) return r.toFixed(3);
+  if (r===0) return (i===1?'':(i===-1?'−':i.toFixed(3))) + 'i';
+  const sgn = i>=0 ? '+' : '−';
+  return r.toFixed(3) + ' ' + sgn + ' ' + Math.abs(i).toFixed(3) + 'i';
+}
+
+// ======== Zustand ========
+const state = { theta:90, phi:0, alpha:90, sTheta:0, sPhi:0 };
+
+function getAxis(){
+  const th = state.theta*Math.PI/180, ph = state.phi*Math.PI/180;
+  return [Math.sin(th)*Math.cos(ph), Math.sin(th)*Math.sin(ph), Math.cos(th)];
+}
+function getInitialBloch(){
+  const th = state.sTheta*Math.PI/180, ph = state.sPhi*Math.PI/180;
+  return [Math.sin(th)*Math.cos(ph), Math.sin(th)*Math.sin(ph), Math.cos(th)];
+}
+function getInitialSpinor(){
+  const th = state.sTheta*Math.PI/180, ph = state.sPhi*Math.PI/180;
+  return [cx(Math.cos(th/2),0), cx(Math.sin(th/2)*Math.cos(ph), Math.sin(th/2)*Math.sin(ph))];
+}
+
+// U = cos(α/2) I − i sin(α/2) (nxσx + nyσy + nzσz)
+function computeSU2(){
+  const [nx,ny,nz] = getAxis();
+  const a = state.alpha*Math.PI/180;
+  const c = Math.cos(a/2), s = Math.sin(a/2);
+  return [
+    [cx(c,-s*nz),     cx(-s*ny,-s*nx)],
+    [cx( s*ny,-s*nx), cx(c, s*nz)]
+  ];
+}
+function applyU(U, psi){
+  return [
+    cxAdd(cxMul(U[0][0],psi[0]), cxMul(U[0][1],psi[1])),
+    cxAdd(cxMul(U[1][0],psi[0]), cxMul(U[1][1],psi[1]))
+  ];
+}
+
+// Rodrigues: R = I + sin(α) K + (1−cos(α)) K²
+function computeSO3(){
+  const [nx,ny,nz] = getAxis();
+  const a = state.alpha*Math.PI/180;
+  const c = Math.cos(a), s = Math.sin(a), t = 1-c;
+  return [
+    [t*nx*nx+c,     t*nx*ny-s*nz, t*nx*nz+s*ny],
+    [t*nx*ny+s*nz,  t*ny*ny+c,    t*ny*nz-s*nx],
+    [t*nx*nz-s*ny,  t*ny*nz+s*nx, t*nz*nz+c]
+  ];
+}
+function applyR(R,v){
+  return [
+    R[0][0]*v[0]+R[0][1]*v[1]+R[0][2]*v[2],
+    R[1][0]*v[0]+R[1][1]*v[1]+R[1][2]*v[2],
+    R[2][0]*v[0]+R[2][1]*v[1]+R[2][2]*v[2]
+  ];
+}
+
+// ======== Matrix-Rendering ========
+function renderComplexMat(id,M){
+  const tbl = document.getElementById(id);
+  tbl.innerHTML='';
+  for (const row of M){
+    const tr = document.createElement('tr');
+    for (const c of row){
+      const td = document.createElement('td');
+      td.className='complex'; td.textContent = cxStr(c);
+      tr.appendChild(td);
+    }
+    tbl.appendChild(tr);
+  }
+}
+function renderRealMat(id,M){
+  const tbl = document.getElementById(id);
+  tbl.innerHTML='';
+  for (const row of M){
+    const tr = document.createElement('tr');
+    for (const v of row){
+      const td = document.createElement('td');
+      td.className='real';
+      td.textContent = (Math.abs(v)<1e-9?0:v).toFixed(3);
+      tr.appendChild(td);
+    }
+    tbl.appendChild(tr);
+  }
+}
+function renderVector2(id,v){
+  const tbl = document.getElementById(id);
+  tbl.innerHTML='';
+  for (const c of v){
+    const tr = document.createElement('tr');
+    const td = document.createElement('td');
+    td.className='complex'; td.textContent = cxStr(c);
+    tr.appendChild(td); tbl.appendChild(tr);
+  }
+}
+function renderVector3(id,v){
+  const tbl = document.getElementById(id);
+  tbl.innerHTML='';
+  for (const x of v){
+    const tr = document.createElement('tr');
+    const td = document.createElement('td');
+    td.className='real';
+    td.textContent = (Math.abs(x)<1e-9?0:x).toFixed(3);
+    tr.appendChild(td); tbl.appendChild(tr);
+  }
+}
+
+// ======== Three.js: Bloch-Sphäre ========
+// Physik-Konvention (x,y,z) rechtshändig mit z oben (|0⟩ Nordpol) → Szene (xs=x, ys=z, zs=−y).
+// Determinante = +1, d.h. Rechts-Hand-Rotationen in der Physik bleiben im Bild Rechts-Hand-Rotationen.
+const toScene = ([x,y,z]) => new THREE.Vector3(x, z, -y);
+let scene, camera, renderer, dyn;
+function initThree(){
+  const container = document.getElementById('canvas-container');
+  const w = container.clientWidth, h = container.clientHeight;
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x0a0a15);
+  camera = new THREE.PerspectiveCamera(45, w/h, 0.1, 100);
+  renderer = new THREE.WebGLRenderer({antialias:true});
+  renderer.setSize(w,h);
+  renderer.setPixelRatio(window.devicePixelRatio);
+  container.appendChild(renderer.domElement);
+
+  scene.add(new THREE.AmbientLight(0xffffff, 0.7));
+  const d = new THREE.DirectionalLight(0xffffff, 0.6);
+  d.position.set(4,6,4); scene.add(d);
+
+  // Bloch-Kugel
+  scene.add(new THREE.Mesh(
+    new THREE.SphereGeometry(1, 48, 32),
+    new THREE.MeshPhongMaterial({color:0x4060a0, transparent:true, opacity:0.12, shininess:80})
+  ));
+  scene.add(new THREE.Mesh(
+    new THREE.SphereGeometry(1.001, 24, 16),
+    new THREE.MeshBasicMaterial({color:0x6080c0, wireframe:true, transparent:true, opacity:0.12})
+  ));
+
+  // Drei transparente Koordinaten­ebenen + Randkreise
+  // xy-Ebene (z_phys = 0): horizontal in der Szene, blau getönt
+  addPlane(0x5090ff, { x: Math.PI/2 });
+  // yz-Ebene (x_phys = 0): vertikal, rot getönt
+  addPlane(0xff5050, { y: Math.PI/2 });
+  // xz-Ebene (y_phys = 0): vertikal, grün getönt
+  addPlane(0x50ff50, { });
+
+  // Koordinatenachsen (Physik-Koords: x rot, y grün, z blau — rechtshändig, z oben)
+  addAxis([ 1.35, 0, 0], 0xff5050);
+  addAxis([-1.05, 0, 0], 0xff5050);
+  addAxis([0,  1.35, 0], 0x50ff50);
+  addAxis([0, -1.05, 0], 0x50ff50);
+  addAxis([0, 0,  1.35], 0x5090ff);
+  addAxis([0, 0, -1.05], 0x5090ff);
+
+  // Achsenbeschriftung (kursiv, klein)
+  addAxisLabel('x', [1.55, 0, 0], '#ff7a7a');
+  addAxisLabel('y', [0, 1.55, 0], '#7aff7a');
+  addAxisLabel('z', [0, 0, 1.55], '#7aa8ff');
+
+  // Zustandslabel (ket-Notation)
+  addLabel('|0⟩',  [0, 0,  1.18], '#9ec1ff');  // Nordpol
+  addLabel('|1⟩',  [0, 0, -1.18], '#9ec1ff');  // Südpol
+  addLabel('|+⟩',  [ 1.18, 0, 0], '#ff9e9e');
+  addLabel('|−⟩',  [-1.18, 0, 0], '#ff9e9e');
+  addLabel('|+i⟩', [0,  1.18, 0], '#9effa0');
+  addLabel('|−i⟩', [0, -1.18, 0], '#9effa0');
+
+  dyn = new THREE.Group();
+  scene.add(dyn);
+
+  window.addEventListener('resize', onResize);
+  setupMouseControls();
+  loop();
+}
+
+function addAxis(to, color){
+  const g = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,0,0), toScene(to)]);
+  scene.add(new THREE.Line(g, new THREE.LineBasicMaterial({color, transparent:true, opacity:0.5})));
+}
+
+function addPlane(color, rotation){
+  // Gefüllte transparente Scheibe
+  const disk = new THREE.Mesh(
+    new THREE.CircleGeometry(1, 64),
+    new THREE.MeshBasicMaterial({
+      color, transparent:true, opacity:0.07,
+      side: THREE.DoubleSide, depthWrite:false
+    })
+  );
+  if (rotation.x) disk.rotation.x = rotation.x;
+  if (rotation.y) disk.rotation.y = rotation.y;
+  scene.add(disk);
+
+  // Randkreis
+  const pts = [];
+  for (let i=0; i<=64; i++){
+    const t = i/64 * Math.PI*2;
+    pts.push(new THREE.Vector3(Math.cos(t), Math.sin(t), 0));
+  }
+  const outline = new THREE.Line(
+    new THREE.BufferGeometry().setFromPoints(pts),
+    new THREE.LineBasicMaterial({color, transparent:true, opacity:0.35})
+  );
+  if (rotation.x) outline.rotation.x = rotation.x;
+  if (rotation.y) outline.rotation.y = rotation.y;
+  scene.add(outline);
+}
+function addLabel(text, physPos, color){
+  const canvas = document.createElement('canvas');
+  canvas.width = 128; canvas.height = 64;
+  const ctx = canvas.getContext('2d');
+  ctx.font = 'bold 34px system-ui';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillStyle = color || '#ffffff';
+  ctx.fillText(text, 64, 32);
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({map: new THREE.CanvasTexture(canvas), transparent:true}));
+  const p = toScene(physPos);
+  sp.position.set(p.x, p.y, p.z);
+  sp.scale.set(0.38,0.19,1);
+  scene.add(sp);
+}
+
+function addAxisLabel(text, physPos, color){
+  const canvas = document.createElement('canvas');
+  canvas.width = 80; canvas.height = 80;
+  const ctx = canvas.getContext('2d');
+  ctx.font = 'italic bold 52px "Times New Roman", serif';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillStyle = color || '#ffffff';
+  ctx.fillText(text, 40, 40);
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({map: new THREE.CanvasTexture(canvas), transparent:true}));
+  const p = toScene(physPos);
+  sp.position.set(p.x, p.y, p.z);
+  sp.scale.set(0.26, 0.26, 1);
+  scene.add(sp);
+}
+
+function makeArrow(physDir, color){
+  const len = Math.hypot(...physDir);
+  const d = toScene(physDir).normalize();
+  return new THREE.ArrowHelper(d, new THREE.Vector3(0,0,0), len, color, Math.min(0.15, len*0.25), Math.min(0.08, len*0.13));
+}
+
+function updateBloch(){
+  while (dyn.children.length) dyn.remove(dyn.children[0]);
+  const n = getAxis();
+  const r0 = getInitialBloch();
+  const R = computeSO3();
+  const r1 = applyR(R, r0);
+
+  // Rotationsachse (durchgehend durch den Ursprung)
+  const axisGeom = new THREE.BufferGeometry().setFromPoints([
+    toScene([-n[0]*1.35,-n[1]*1.35,-n[2]*1.35]),
+    toScene([ n[0]*1.35, n[1]*1.35, n[2]*1.35])
+  ]);
+  dyn.add(new THREE.Line(axisGeom, new THREE.LineBasicMaterial({color:0xc678dd, transparent:true, opacity:0.55})));
+  dyn.add(makeArrow([n[0]*1.15, n[1]*1.15, n[2]*1.15], 0xc678dd));
+
+  // Anfangs- / Endvektor
+  dyn.add(makeArrow(r0, 0xffffff));
+  dyn.add(makeArrow(r1, 0xffd700));
+
+  // Bogen der Rotation
+  const steps = 96, pts = [];
+  const a = state.alpha*Math.PI/180;
+  for (let i=0; i<=steps; i++){
+    const t = i/steps * a;
+    const c = Math.cos(t), s = Math.sin(t), om = 1-c;
+    const Rt = [
+      [om*n[0]*n[0]+c,    om*n[0]*n[1]-s*n[2], om*n[0]*n[2]+s*n[1]],
+      [om*n[0]*n[1]+s*n[2], om*n[1]*n[1]+c,    om*n[1]*n[2]-s*n[0]],
+      [om*n[0]*n[2]-s*n[1], om*n[1]*n[2]+s*n[0], om*n[2]*n[2]+c]
+    ];
+    const p = applyR(Rt, r0);
+    pts.push(toScene(p));
+  }
+  dyn.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),
+    new THREE.LineBasicMaterial({color:0xffd700})));
+}
+
+// ======== Kamera-Steuerung ========
+let md=false, mx=0, my=0, camAz=Math.PI*0.3, camEl=Math.PI*0.38, camR=4.2;
+function setupMouseControls(){
+  const dom = renderer.domElement;
+  dom.addEventListener('mousedown', e => { md=true; mx=e.clientX; my=e.clientY; });
+  window.addEventListener('mouseup', () => md=false);
+  window.addEventListener('mousemove', e => {
+    if (!md) return;
+    const dx = e.clientX-mx, dy = e.clientY-my;
+    mx = e.clientX; my = e.clientY;
+    camAz -= dx*0.008;
+    camEl = Math.max(0.05, Math.min(Math.PI-0.05, camEl - dy*0.008));
+    updateCam();
+  });
+  dom.addEventListener('wheel', e => {
+    camR = Math.max(2, Math.min(10, camR + e.deltaY*0.004));
+    updateCam(); e.preventDefault();
+  }, {passive:false});
+  updateCam();
+}
+function updateCam(){
+  camera.position.x = camR*Math.sin(camEl)*Math.cos(camAz);
+  camera.position.y = camR*Math.cos(camEl);
+  camera.position.z = camR*Math.sin(camEl)*Math.sin(camAz);
+  camera.up.set(0,1,0);
+  camera.lookAt(0,0,0);
+}
+function onResize(){
+  const c = document.getElementById('canvas-container');
+  camera.aspect = c.clientWidth/c.clientHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(c.clientWidth, c.clientHeight);
+}
+function loop(){ requestAnimationFrame(loop); renderer.render(scene, camera); }
+
+// ======== UI-Verdrahtung ========
+function updateAll(){
+  document.getElementById('th-val').textContent  = state.theta + '°';
+  document.getElementById('ph-val').textContent  = state.phi + '°';
+  document.getElementById('al-val').textContent  = state.alpha + '°';
+  document.getElementById('ths-val').textContent = state.sTheta + '°';
+  document.getElementById('phs-val').textContent = state.sPhi + '°';
+  const n = getAxis();
+  document.getElementById('n-vec').textContent = `n̂ = (${n[0].toFixed(3)}, ${n[1].toFixed(3)}, ${n[2].toFixed(3)})`;
+
+  const U = computeSU2();      renderComplexMat('su2-mat', U);
+  const psi = getInitialSpinor();
+  const psiPrime = applyU(U, psi);
+  renderVector2('psi-mat', psiPrime);
+
+  // Aktueller Zustand als Vektorsumme
+  document.getElementById('state-sum').innerHTML =
+    '|ψ\'⟩ = (' + cxStr(psiPrime[0]) + ') |0⟩ &nbsp;+&nbsp; (' + cxStr(psiPrime[1]) + ') |1⟩';
+  document.getElementById('state-sum-init').innerHTML =
+    '|ψ⟩  = (' + cxStr(psi[0]) + ') |0⟩ + (' + cxStr(psi[1]) + ') |1⟩';
+
+  const R = computeSO3();      renderRealMat('so3-mat', R);
+  const r0 = getInitialBloch();
+  renderVector3('r-mat', applyR(R, r0));
+
+  updateBloch();
+}
+
+function bindSlider(id, key){
+  const el = document.getElementById(id);
+  el.addEventListener('input', () => { state[key] = +el.value; updateAll(); });
+}
+
+function setPreset(name){
+  const p = ({
+    'X': {theta:90, phi:0,   alpha:180},
+    'Y': {theta:90, phi:90,  alpha:180},
+    'Z': {theta:0,  phi:0,   alpha:180},
+    'H': {theta:45, phi:0,   alpha:180}, // Hadamard ~ π um (x+z)/√2
+    'S': {theta:0,  phi:0,   alpha:90},
+    'T': {theta:0,  phi:0,   alpha:45}
+  })[name];
+  if (!p) return;
+  Object.assign(state, p);
+  syncSliders(); updateAll();
+}
+function syncSliders(){
+  ['th','ph','al','ths','phs'].forEach((id,i)=>{
+    document.getElementById(id).value = [state.theta, state.phi, state.alpha, state.sTheta, state.sPhi][i];
+  });
+}
+
+let animTok = 0;
+function animate2pi(){
+  const tok = ++animTok;
+  const start = performance.now();
+  const dur = 4500;
+  function step(){
+    if (tok !== animTok) return;
+    const t = (performance.now()-start)/dur;
+    if (t >= 1){ state.alpha = 720; syncSliders(); updateAll(); return; }
+    state.alpha = Math.round(t*720);
+    syncSliders(); updateAll();
+    requestAnimationFrame(step);
+  }
+  step();
+}
+function resetAll(){
+  animTok++;
+  state.theta=90; state.phi=0; state.alpha=90; state.sTheta=0; state.sPhi=0;
+  syncSliders(); updateAll();
+}
+
+window.addEventListener('load', () => {
+  initThree();
+  bindSlider('th','theta');
+  bindSlider('ph','phi');
+  bindSlider('al','alpha');
+  bindSlider('ths','sTheta');
+  bindSlider('phs','sPhi');
+  updateAll();
+});
+</script>
+</body>
+</html>

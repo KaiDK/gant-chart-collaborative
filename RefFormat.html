@@ -95,8 +95,13 @@
 
   main { display: flex; flex: 1; overflow: hidden; }
   .panel { display: flex; flex-direction: column; overflow: hidden; }
-  .panel-left { width: 42%; border-right: 1px solid var(--border); background: var(--bg-input); }
-  .panel-right { flex: 1; background: var(--bg-panel); }
+  .panel-left { width: 42%; min-width: 200px; flex-shrink: 0; border-right: none; background: var(--bg-input); }
+  .panel-right { flex: 1; min-width: 200px; background: var(--bg-panel); position: relative; }
+  .panel-resizer {
+    width: 5px; background: var(--border); cursor: col-resize;
+    transition: background 0.15s; flex-shrink: 0;
+  }
+  .panel-resizer:hover, .panel-resizer.dragging { background: var(--accent); }
 
   .panel-header {
     padding: 12px 20px;
@@ -208,6 +213,20 @@
   .ref-item:hover .btn-refresh { opacity: 1; }
   .ref-item .btn-refresh:hover { color: var(--accent); border-color: var(--accent); background: var(--accent-light); }
   .ref-item .btn-refresh.loading { opacity: 1; animation: spin 0.6s linear infinite; }
+  .ref-item .btn-copy-ref, .ref-item .btn-copy-ref-md, .ref-item .btn-abstract {
+    background: none; border: 1px solid var(--border-light); border-radius: 3px;
+    color: var(--text-light); cursor: pointer; padding: 1px 6px; line-height: 1;
+    font-size: 10px; font-family: var(--font-ui); font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.4px;
+    transition: all 0.15s; opacity: 0;
+  }
+  .ref-item:hover .btn-copy-ref, .ref-item:hover .btn-copy-ref-md, .ref-item:hover .btn-abstract { opacity: 1; }
+  .ref-item .btn-copy-ref:hover, .ref-item .btn-copy-ref-md:hover, .ref-item .btn-abstract:hover {
+    color: var(--accent); border-color: var(--accent); background: var(--accent-light);
+  }
+  .ref-item .btn-copy-ref.copied, .ref-item .btn-copy-ref-md.copied {
+    opacity: 1; color: var(--success); border-color: var(--success); background: #e8f5e8;
+  }
   .status-ok { color: var(--success); background: #e8f5e8; }
   .status-arxiv { color: var(--arxiv-color); background: var(--arxiv-bg); }
   .status-pmid { color: var(--pmid-color); background: var(--pmid-bg); }
@@ -226,18 +245,28 @@
   .tag-ssrn { color: #6a4c93; background: #f0e6ff; }
 
   .ref-item .ref-summary {
-    margin-top: 10px; padding: 10px 14px;
-    background: linear-gradient(135deg, #f8f4ec, #f0ece3);
-    border-radius: 4px; font-size: 13px; font-style: italic;
+    margin-top: 10px; background: linear-gradient(135deg, #f8f4ec, #f0ece3);
+    border-radius: 4px; font-size: 13px;
     color: var(--text-muted); border-left: 3px solid var(--accent); line-height: 1.55;
   }
-  .ref-item .ref-summary::before {
-    content: 'AI Summary'; display: block; font-family: var(--font-ui);
-    font-size: 9px; font-weight: 700; text-transform: uppercase;
-    letter-spacing: 1px; color: var(--accent); margin-bottom: 4px; font-style: normal;
+  .ref-item .ref-summary-header {
+    padding: 8px 14px; cursor: pointer; user-select: none;
+    display: flex; justify-content: space-between; align-items: center;
   }
+  .ref-item .ref-summary-header:hover { background: rgba(0,0,0,0.03); }
+  .ref-item .ref-summary-title {
+    font-family: var(--font-ui); font-size: 9px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 1px; color: var(--accent);
+  }
+  .ref-item .ref-summary-toggle { font-size: 10px; color: #999; transition: transform 0.2s; }
+  .ref-item .ref-summary.collapsed .ref-summary-toggle { transform: rotate(-90deg); }
+  .ref-item .ref-summary-body { padding: 0 14px 10px 14px; }
+  .ref-item .ref-summary.collapsed .ref-summary-body { display: none; }
+  .ref-item .ref-summary ul, .ref-item .ref-summary ol { margin: 0; padding-left: 1.2em; }
+  .ref-item .ref-summary li { margin: 2px 0; }
+  .ref-item .ref-summary p { margin: 0 0 0.5em 0; }
+  .ref-item .ref-summary p:last-child { margin-bottom: 0; }
 
-  .has-abstract { cursor: help; }
 
   .abstract-tooltip, .status-tooltip {
     display: none; position: fixed; z-index: 1000; max-width: 420px;
@@ -258,6 +287,8 @@
   .status-tooltip .tt-error-line:last-child { border-bottom: none; }
   .status-tooltip .tt-label { color: var(--accent); font-weight: 700; }
   .status-tooltip .tt-msg { opacity: 0.85; }
+
+  .has-abstract { cursor: help; }
 
   .empty-state {
     display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -295,21 +326,44 @@
   .modal select { width: 100%; margin-bottom: 16px; }
 
   .resolve-log {
-    display: none; position: fixed; z-index: 1500;
-    width: 420px; max-height: 260px;
-    background: #1a1a1a; color: #ccc; border-radius: 8px;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.4); overflow: hidden;
+    position: absolute; bottom: 0; left: 0; right: 0;
+    height: 25%; min-height: 60px; max-height: 80%;
+    display: none; flex-direction: column;
+    background: #1a1a1a; color: #ccc;
+    border-top: 1px solid #333;
     font-family: var(--font-mono); font-size: 11px; line-height: 1.6;
+    z-index: 100;
   }
-  .resolve-log.active { display: block; }
+  .resolve-log-resizer {
+    height: 4px; background: transparent; cursor: ns-resize;
+    position: absolute; top: -2px; left: 0; right: 0;
+    transition: background 0.15s;
+  }
+  .resolve-log-resizer:hover, .resolve-log-resizer.dragging { background: var(--accent); }
+  .resolve-log.active { display: flex; }
+  .resolve-log.collapsed { height: auto; }
+  .resolve-log.collapsed .resolve-log-body { display: none; }
   .resolve-log-header {
-    padding: 6px 12px; background: #252525; color: #888;
+    padding: 0 12px; background: #252525; color: #888;
     font-size: 10px; font-weight: 700; letter-spacing: 0.5px;
     text-transform: uppercase; border-bottom: 1px solid #333;
     display: flex; justify-content: space-between; align-items: center;
+    user-select: none;
   }
+  .resolve-log-tabs { display: flex; gap: 0; }
+  .resolve-log-tab {
+    background: none; border: none; color: #666; cursor: pointer;
+    padding: 8px 12px; font-size: 10px; font-weight: 700; letter-spacing: 0.5px;
+    text-transform: uppercase; border-bottom: 2px solid transparent;
+    transition: all 0.15s;
+  }
+  .resolve-log-tab:hover { color: #aaa; }
+  .resolve-log-tab.active { color: #ccc; border-bottom-color: var(--accent); }
+  .resolve-log-toggle { font-size: 14px; color: #666; transition: transform 0.2s; cursor: pointer; padding: 8px; }
+  .resolve-log-toggle:hover { color: #aaa; }
+  .resolve-log.collapsed .resolve-log-toggle { transform: rotate(180deg); }
   .resolve-log-body {
-    padding: 8px 12px; max-height: 220px; overflow-y: auto;
+    padding: 8px 12px; flex: 1; overflow-y: auto;
   }
   .resolve-log-body::-webkit-scrollbar { width: 5px; }
   .resolve-log-body::-webkit-scrollbar-thumb { background: #444; border-radius: 3px; }
@@ -364,15 +418,22 @@
       <option value="chicago">Chicago</option>
       <option value="harvard">Harvard</option>
       <option value="vancouver">Vancouver</option>
-      <option value="nature">Nature</option>
+      <option value="nature" selected>Nature</option>
       <option value="aps">APS</option>
       <option value="acs">ACS</option>
       <option value="mla">MLA 9th</option>
       <option value="cell">Cell</option>
     </select>
     <button class="btn btn-primary" id="btnFormat" title="Format references (Ctrl+Enter)">Format</button>
+    <button class="btn btn-secondary" id="btnAbort" title="Abort resolution" style="display:none">Abort</button>
+    <button class="btn btn-secondary" id="btnSaveOutput" title="Download formatted output as .txt file">Save output</button>
     <button class="btn btn-secondary btn-copy-all" id="btnCopy" title="Copy formatted output">Copy</button>
+    <button class="btn btn-secondary btn-copy-all" id="btnCopyMd" title="Copy formatted output as Markdown">Copy md</button>
     <button class="btn btn-secondary btn-copy-all" id="btnExportBib" title="Download BibTeX cache as .bib file">.bib</button>
+    <span style="width:1px;height:20px;background:var(--border);margin:0 8px"></span>
+    <button class="btn btn-secondary" id="btnAbstracts" title="Fetch abstracts">Abstracts</button>
+    <button class="btn btn-secondary" id="btnSummarize" title="Generate AI summaries using a local in-browser model (WebLLM)">AI Summaries</button>
+    <button class="btn btn-secondary" id="btnClear" title="Clear all">Clear</button>
   </div>
 </header>
 
@@ -381,7 +442,9 @@
     <div class="panel-header">
       <span>Raw References</span>
       <div class="badge-group">
-        <button class="btn-icon" id="btnDownloadInput" title="Download input as .txt file">Save</button>
+        <button class="btn-icon" id="btnUndo" title="Undo (Ctrl+Z)">Undo</button>
+        <button class="btn-icon" id="btnRedo" title="Redo (Ctrl+Y)">Redo</button>
+        <button class="btn-icon" id="btnDownloadInput" title="Download input as .txt file">Save input</button>
       </div>
     </div>
     <div class="input-wrap">
@@ -393,18 +456,14 @@
     </div>
     <div class="input-footer">
       <span id="lineCount">0 lines</span>
-      <div class="actions">
-        <button class="btn btn-sm btn-outline" id="btnAbstracts" title="Fetch abstracts (shown as tooltips)">Abstracts</button>
-        <button class="btn btn-sm btn-outline" id="btnSummarize" title="Generate AI summaries using a local in-browser model (WebLLM)">AI Summaries</button>
-        <button class="btn btn-sm btn-outline" id="btnClear">Clear</button>
-      </div>
     </div>
   </div>
-
+  <div class="panel-resizer" id="panelResizer"></div>
   <div class="panel panel-right">
     <div class="panel-header">
       <span>Formatted Output</span>
       <div class="badge-group">
+        <button class="btn btn-sm btn-outline" id="btnToggleSummaries" style="display:none;padding:2px 8px;font-size:9px" title="Collapse/expand all AI summaries">▼ Summaries</button>
         <span class="badge" id="refCount" style="display:none">0</span>
         <span class="badge-subtle" id="statsKept" style="display:none;background:var(--kept-bg);color:var(--kept-color)">0 kept</span>
       </div>
@@ -416,6 +475,18 @@
         <h3>No references yet</h3>
         <p>Paste references on the left and click <strong>Format</strong>. Supports <code>DOI</code>, <code>arXiv</code>, <code>bioRxiv</code>, <code>medRxiv</code>, <code>PMID</code>, and <code>SSRN</code>. Lines without a resolvable identifier are kept as-is. Resolved metadata is cached as BibTeX at the end of the input for easy export/reimport.</p>
       </div>
+    </div>
+    <div class="resolve-log" id="resolveLog">
+      <div class="resolve-log-resizer" id="consoleResizer"></div>
+      <div class="resolve-log-header" id="resolveLogHeader">
+        <div class="resolve-log-tabs">
+          <button class="resolve-log-tab active" data-tab="log">Log <span id="resolveLogCount"></span></button>
+          <button class="resolve-log-tab" data-tab="abstract">Abstract</button>
+        </div>
+        <span class="resolve-log-toggle">&#9660;</span>
+      </div>
+      <div class="resolve-log-body" id="resolveLogBody"></div>
+      <div class="resolve-log-body" id="resolveAbstractBody" style="display:none"></div>
     </div>
   </div>
 </main>
@@ -430,14 +501,6 @@
   <div id="stContent"></div>
 </div>
 
-<div class="resolve-log" id="resolveLog">
-  <div class="resolve-log-header">
-    <span>Resolving references</span>
-    <span id="resolveLogCount"></span>
-  </div>
-  <div class="resolve-log-body" id="resolveLogBody"></div>
-</div>
-
 <div class="modal-overlay" id="llmModal">
   <div class="modal">
     <h3>Enable Local AI Summaries</h3>
@@ -449,6 +512,14 @@
       <option value="SmolLM2-360M-Instruct-q0f16-MLC">SmolLM2 360M (smallest, ~720 MB)</option>
       <option value="Llama-3.2-1B-Instruct-q4f16_1-MLC">Llama 3.2 1B (~700 MB)</option>
     </select>
+    <label for="llmPrompt">Prompt template <span style="font-weight:400;color:#666">(use {title}, {authors}, {journal}, {year}, {abstract})</span></label>
+    <textarea id="llmPrompt" rows="4" style="width:100%;font-family:var(--font-mono);font-size:11px;margin-bottom:16px;resize:vertical">Summarize this academic paper in exactly 3 concise bullet points with a maximum of 100 characters each. Give just the bullet points, nothing else. Use markdown format (**bold**, *italic*, bullet points (- item) and paragraphs). Be specific about the contribution and findings.
+
+Title: {title}
+Authors: {authors}
+Journal: {journal}
+Year: {year}
+{abstract}</textarea>
     <div class="llm-status" id="llmStatus"></div>
     <div class="modal-actions">
       <button class="btn btn-sm btn-outline" id="llmCancel">Cancel</button>
@@ -478,9 +549,18 @@
   const styleSelect = $('styleSelect');
   const btnFormat   = $('btnFormat');
   const btnCopy     = $('btnCopy');
+  const btnCopyMd   = $('btnCopyMd');
+  const btnAbort    = $('btnAbort');
+  // AbortController for the reference currently being resolved. The Abort button
+  // aborts this controller, which causes in-flight fetches to throw AbortError and
+  // the resolve loop to skip to the next reference.
+  let currentRefAC = null;
   const btnAbstracts= $('btnAbstracts');
   const btnSummarize= $('btnSummarize');
+  const btnToggleSummaries = $('btnToggleSummaries');
   const btnClear    = $('btnClear');
+  const btnUndo     = $('btnUndo');
+  const btnRedo     = $('btnRedo');
   const lineCountEl = $('lineCount');
   const refCountEl  = $('refCount');
   const statsKeptEl = $('statsKept');
@@ -494,11 +574,48 @@
   const llmModal    = $('llmModal');
   const llmStatus   = $('llmStatus');
   const llmModelSelect = $('llmModelSelect');
+  const llmPromptEl    = $('llmPrompt');
   const resolveLog     = $('resolveLog');
   const resolveLogBody = $('resolveLogBody');
+  const resolveAbstractBody = $('resolveAbstractBody');
   const resolveLogCount= $('resolveLogCount');
+  const resolveLogHeader = $('resolveLogHeader');
+  const resolveLogTabs = resolveLog.querySelectorAll('.resolve-log-tab');
+  const resolveLogToggle = resolveLog.querySelector('.resolve-log-toggle');
 
   /* ═══ Resolve log ═══ */
+  // Tab switching
+  resolveLogTabs.forEach(tab => {
+    tab.addEventListener('click', (e) => {
+      e.stopPropagation();
+      resolveLogTabs.forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      const which = tab.dataset.tab;
+      resolveLogBody.style.display = which === 'log' ? '' : 'none';
+      resolveAbstractBody.style.display = which === 'abstract' ? '' : 'none';
+    });
+  });
+
+  // Collapse toggle (only on the arrow)
+  // The resizer sets an inline style.height, which would otherwise override the
+  // CSS `.collapsed { height: auto }` rule. Save/restore it around the toggle.
+  resolveLogToggle.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (resolveLog.classList.contains('collapsed')) {
+      resolveLog.classList.remove('collapsed');
+      if (resolveLog.dataset.savedHeight) {
+        resolveLog.style.height = resolveLog.dataset.savedHeight;
+        delete resolveLog.dataset.savedHeight;
+      }
+    } else {
+      if (resolveLog.style.height) {
+        resolveLog.dataset.savedHeight = resolveLog.style.height;
+        resolveLog.style.height = '';
+      }
+      resolveLog.classList.add('collapsed');
+    }
+  });
+
   function rlog(msg, type = 'info') {
     const line = document.createElement('div');
     line.className = 'log-line log-' + type;
@@ -514,28 +631,25 @@
     resolveLogBody.scrollTop = resolveLogBody.scrollHeight;
   }
 
-  function showResolveLog() {
-    resolveLogBody.innerHTML = '';
+  function showResolveLog(clear = true) {
+    if (clear) resolveLogBody.innerHTML = '';
     resolveLog.classList.add('active');
-    // Position below the Format button
-    const rect = btnFormat.getBoundingClientRect();
-    let l = rect.left, t = rect.bottom + 8;
-    const ww = window.innerWidth, wh = window.innerHeight;
-    if (l + 420 > ww - 10) l = ww - 430;
-    if (l < 10) l = 10;
-    if (t + 260 > wh - 10) t = rect.top - 268;
-    resolveLog.style.left = l + 'px';
-    resolveLog.style.top = t + 'px';
+    if (resolveLog.classList.contains('collapsed')) {
+      resolveLog.classList.remove('collapsed');
+      if (resolveLog.dataset.savedHeight) {
+        resolveLog.style.height = resolveLog.dataset.savedHeight;
+        delete resolveLog.dataset.savedHeight;
+      }
+    }
   }
 
   function hideResolveLog() {
-    setTimeout(() => resolveLog.classList.remove('active'), 800);
+    // Don't auto-hide — keep log visible so user can review it
   }
 
   /* ═══════════════════════════════════════════════════
      Identifier extraction
      ═══════════════════════════════════════════════════ */
-  const ID_RE = /^\s*(\[[^\]]+\])/;
 
   // DOI
   const DOI_URL_RE  = /(?:doi\.org\/|doi:\s*)(10\.\d{4,9}\/[^\s,;)\]}>]+)/i;
@@ -607,9 +721,11 @@
   function parseLines(text) {
     const [refPart] = splitBibtex(text);
     return refPart.split('\n').filter(l => l.trim()).map(line => {
-      const idMatch = line.match(ID_RE);
-      const id   = idMatch ? idMatch[1] : null;
-      const rest = idMatch ? line.slice(idMatch[0].length).trim() : line.trim();
+      const trimmed = line.trim();
+      // Citation key = everything up to the first whitespace; rest = remainder.
+      const firstSpace = trimmed.search(/\s/);
+      const id   = firstSpace === -1 ? trimmed : trimmed.slice(0, firstSpace);
+      const rest = firstSpace === -1 ? '' : trimmed.slice(firstSpace + 1).trim();
       const ids  = extractIdentifiers(rest);
       const key  = resolveKey(ids);
       return { raw: line, id, rest, ids, key, kept: !key };
@@ -771,12 +887,17 @@
 
   /* ── Rate-limit-aware fetch: retries on 429/5xx with exponential backoff ── */
   async function fetchWithRetry(url, opts = {}, maxRetries = 3) {
+    const signal = opts.signal || currentRefAC?.signal;
+    if (signal && !opts.signal) opts = { ...opts, signal };
     let lastErr;
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      if (signal?.aborted) throw new DOMException('aborted', 'AbortError');
       let r;
       try {
         r = await fetch(url, opts);
       } catch(e) {
+        // Abort: propagate immediately, no retry
+        if (e.name === 'AbortError') throw e;
         // Network/CORS errors throw TypeError
         lastErr = e;
         if (attempt < maxRetries) {
@@ -853,122 +974,35 @@
     });
   }
 
-  async function fetchArxiv(arxivId) {
-    const clean = arxivId.replace(/v\d+$/, '');
-    const r = await fetchWithCORS('https://export.arxiv.org/api/query?id_list=' + encodeURIComponent(clean));
-    if (!r.ok) throw new Error(`arXiv API returned HTTP ${r.status}`);
-    const xml = new DOMParser().parseFromString(await r.text(), 'application/xml');
-    const entry = xml.querySelector('entry');
-    if (!entry) throw new Error('arXiv API returned no entry for "' + arxivId + '"');
-
-    // Detect error entries (arXiv returns an entry with id containing "api/errors")
-    const entryId = entry.querySelector('id')?.textContent || '';
-    if (entryId.includes('api/errors')) {
-      const errSummary = entry.querySelector('summary')?.textContent || 'Unknown error';
-      throw new Error('arXiv API error: ' + errSummary.trim());
+  /* DOI content negotiation — works for ALL DOI Registration Agencies
+     (CrossRef, DataCite, mEDRA, JaLC, etc.) when CrossRef doesn't have it. */
+  async function fetchDoiCSL(doi) {
+    const r = await fetchWithRetry('https://doi.org/' + encodeURIComponent(doi), {
+      headers: { Accept: 'application/vnd.citationstyles.csl+json' },
+      redirect: 'follow'
+    });
+    if (!r.ok) throw new Error(`doi.org returned HTTP ${r.status} for DOI "${doi}"`);
+    const ct = r.headers.get('content-type') || '';
+    if (!ct.toLowerCase().includes('json')) {
+      throw new Error(`DOI agency did not return CSL-JSON (content-type: ${ct||'unknown'})`);
     }
-
-    const title = (entry.querySelector('title')?.textContent||'').replace(/\s+/g,' ').trim();
-    if (!title) throw new Error('arXiv entry has no title for "' + arxivId + '"');
-
-    const abstract = (entry.querySelector('summary')?.textContent||'').replace(/\s+/g,' ').trim();
-    const pub = entry.querySelector('published')?.textContent||'';
-    const year  = pub ? new Date(pub).getFullYear() : null;
-    const month = pub ? new Date(pub).getMonth()+1 : null;
-
-    const authors = [];
-    entry.querySelectorAll('author').forEach(a => {
-      const n = a.querySelector('name')?.textContent||'';
-      const parts = n.split(/\s+/);
-      const family = parts.pop()||'';
-      authors.push({ given: parts.join(' '), family, full: n });
-    });
-
-    const ns = 'http://arxiv.org/schemas/atom';
-    const jRef = entry.getElementsByTagNameNS(ns,'journal_ref')[0]?.textContent || '';
-    const aDoi = entry.getElementsByTagNameNS(ns,'doi')[0]?.textContent || null;
-
+    const d = await r.json();
+    const pick = x => Array.isArray(x) ? (x[0]||'') : (x||'');
     return makeMeta({
-      doi: aDoi || ('10.48550/arXiv.'+clean),
-      title, authors, year, month,
-      journal: jRef || 'arXiv preprint',
-      url: 'https://arxiv.org/abs/'+arxivId,
-      abstract: abstract||null, source: 'arxiv'
-    });
-  }
-
-  /* ── arXiv HTML scrape fallback (abs page has CORS) ── */
-  /* CORS proxies for fetching pages that don't send Access-Control-Allow-Origin */
-  const CORS_PROXIES = [
-    url => 'https://corsproxy.io/?' + encodeURIComponent(url),
-    url => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url),
-  ];
-
-  async function fetchWithCORS(url) {
-    // Try direct first (works if server has CORS or same-origin)
-    try {
-      const r = await fetch(url);
-      if (r.ok) return r;
-    } catch(e) { /* CORS or network error — try proxies */ }
-    // Try CORS proxies in order
-    for (const proxy of CORS_PROXIES) {
-      try {
-        const r = await fetchWithRetry(proxy(url));
-        if (r.ok) return r;
-      } catch(e) { /* proxy failed, try next */ }
-    }
-    throw new Error(`Failed to fetch ${new URL(url).hostname} (CORS blocked, all proxies failed)`);
-  }
-
-  async function scrapeArxiv(arxivId) {
-    const clean = arxivId.replace(/v\d+$/, '');
-    const r = await fetchWithCORS('https://arxiv.org/abs/' + clean);
-    const html = await r.text();
-    const doc = new DOMParser().parseFromString(html, 'text/html');
-
-    // Title from <meta name="citation_title">
-    const title = doc.querySelector('meta[name="citation_title"]')?.content
-               || doc.querySelector('.title.mathjax')?.textContent?.replace(/^Title:\s*/i,'').trim();
-    if (!title) throw new Error('Could not extract title from arXiv page');
-
-    // Authors from <meta name="citation_author"> (one per author)
-    const authorMetas = doc.querySelectorAll('meta[name="citation_author"]');
-    const authors = [];
-    authorMetas.forEach(m => {
-      const name = m.content || '';
-      // citation_author is typically "Family, Given"
-      const comma = name.indexOf(',');
-      if (comma > 0) {
-        const family = name.slice(0, comma).trim();
-        const given = name.slice(comma + 1).trim();
-        authors.push({ family, given, full: given + ' ' + family });
-      } else {
-        const parts = name.split(/\s+/);
-        const family = parts.pop() || '';
-        authors.push({ given: parts.join(' '), family, full: name });
-      }
-    });
-
-    // Date from <meta name="citation_date"> (YYYY/MM/DD or YYYY)
-    const dateStr = doc.querySelector('meta[name="citation_date"]')?.content || '';
-    const dateParts = dateStr.split('/');
-    const year = dateParts[0] ? parseInt(dateParts[0]) : null;
-    const month = dateParts[1] ? parseInt(dateParts[1]) : null;
-
-    // Abstract from <blockquote class="abstract">
-    let abstract = doc.querySelector('blockquote.abstract')?.textContent || '';
-    abstract = abstract.replace(/^Abstract:\s*/i, '').replace(/\s+/g, ' ').trim();
-
-    // DOI from <meta name="citation_doi">
-    const doi = doc.querySelector('meta[name="citation_doi"]')?.content || null;
-
-    return makeMeta({
-      doi: doi || ('10.48550/arXiv.' + clean),
-      title, authors, year, month,
-      journal: 'arXiv preprint',
-      url: 'https://arxiv.org/abs/' + arxivId,
-      abstract: abstract || null,
-      source: 'arxiv'
+      doi: d.DOI || doi,
+      title: pick(d.title),
+      authors: (d.author||[]).map(a => ({
+        given: a.given||'', family: a.family||(a.literal||''),
+        full: a.literal || ((a.given||'')+' '+(a.family||'')).trim()
+      })),
+      year: d.issued?.['date-parts']?.[0]?.[0] ?? null,
+      month: d.issued?.['date-parts']?.[0]?.[1] ?? null,
+      journal: pick(d['container-title']),
+      volume: d.volume||'', issue: d.issue||'', pages: d.page||'',
+      publisher: d.publisher||'', type: d.type||'journal-article',
+      url: d.URL || ('https://doi.org/'+doi),
+      abstract: d.abstract ? d.abstract.replace(/<[^>]+>/g,'').trim() : null,
+      source: 'doi'
     });
   }
 
@@ -1064,32 +1098,38 @@
         meta = await fetchCrossRef(ids.doi);
         rlog(label + '  CrossRef \u2713 ' + (meta.title||'').slice(0,50), 'ok');
       } catch(e) {
+        if (e.name === 'AbortError') throw e;
         errors.push('CrossRef: ' + e.message);
         rlog(label + '  CrossRef \u2717 ' + e.message, 'err');
       }
     }
 
-    // 2) arXiv — scrape abs page first, then API, then Semantic Scholar
-    if (!meta && ids.arxiv) {
-      rlog(label + '  arXiv scrape \u2192 ' + ids.arxiv);
+    // 1b) DOI content negotiation via doi.org (covers non-CrossRef agencies: DataCite, mEDRA, JaLC, etc.)
+    if (!meta && ids.doi) {
+      rlog(label + '  doi.org CSL \u2192 doi:' + ids.doi);
       try {
-        meta = await scrapeArxiv(ids.arxiv);
-        rlog(label + '  arXiv scrape \u2713 ' + (meta.title||'').slice(0,50), 'ok');
+        meta = await fetchDoiCSL(ids.doi);
+        rlog(label + '  doi.org CSL \u2713 ' + (meta.title||'').slice(0,50), 'ok');
       } catch(e) {
-        errors.push('arXiv scrape: ' + e.message);
-        rlog(label + '  arXiv scrape \u2717 ' + e.message, 'err');
+        if (e.name === 'AbortError') throw e;
+        errors.push('doi.org CSL: ' + e.message);
+        rlog(label + '  doi.org CSL \u2717 ' + e.message, 'err');
       }
+    }
 
-      // Fallback: arXiv Atom API (often blocked by CORS)
-      if (!meta) {
-        rlog(label + '  arXiv API \u2192 ' + ids.arxiv);
-        try {
-          meta = await fetchArxiv(ids.arxiv);
-          rlog(label + '  arXiv API \u2713 ' + (meta.title||'').slice(0,50), 'ok');
-        } catch(e) {
-          errors.push('arXiv API: ' + e.message);
-          rlog(label + '  arXiv API \u2717 ' + e.message, 'err');
-        }
+    // 2) arXiv — synthesize DOI (10.48550/arXiv.{id}) and resolve via doi.org (DataCite, not CrossRef)
+    if (!meta && ids.arxiv) {
+      const arxivClean = ids.arxiv.replace(/v\d+$/, '');
+      const arxivDoi = '10.48550/arXiv.' + arxivClean;
+      rlog(label + '  arXiv \u2192 doi:' + arxivDoi);
+      try {
+        meta = await fetchDoiCSL(arxivDoi);
+        if (meta) { meta.source = 'arxiv'; meta.url = meta.url || 'https://arxiv.org/abs/' + ids.arxiv; }
+        rlog(label + '  doi.org CSL \u2713 ' + (meta?.title||'').slice(0,50), 'ok');
+      } catch(e) {
+        if (e.name === 'AbortError') throw e;
+        errors.push('doi.org CSL (arXiv DOI): ' + e.message);
+        rlog(label + '  doi.org CSL \u2717 ' + e.message, 'err');
       }
 
       // Fallback: Semantic Scholar
@@ -1099,24 +1139,9 @@
           meta = await fetchSemanticScholar('arxiv', ids.arxiv);
           rlog(label + '  Semantic Scholar \u2713 ' + (meta.title||'').slice(0,50), 'ok');
         } catch(e) {
+          if (e.name === 'AbortError') throw e;
           errors.push('Semantic Scholar: ' + e.message);
           rlog(label + '  Semantic Scholar \u2717 ' + e.message, 'err');
-        }
-      }
-
-      // If we got arXiv metadata with a published DOI, enrich via CrossRef
-      if (meta && meta.doi && !ids.doi && !meta.doi.startsWith('10.48550/')) {
-        rlog(label + '  CrossRef enrich \u2192 doi:' + meta.doi);
-        try {
-          const cr = await fetchCrossRef(meta.doi);
-          if (cr && cr.title) {
-            cr.source = ids.source || 'arxiv';
-            if (!cr.abstract && meta.abstract) cr.abstract = meta.abstract;
-            meta = cr;
-            rlog(label + '  CrossRef enrich \u2713', 'ok');
-          }
-        } catch(e) {
-          rlog(label + '  CrossRef enrich \u2717 ' + e.message, 'warn');
         }
       }
     }
@@ -1128,6 +1153,7 @@
         meta = await fetchPubMed(ids.pmid);
         rlog(label + '  PubMed \u2713', 'ok');
       } catch(e) {
+        if (e.name === 'AbortError') throw e;
         errors.push('PubMed: ' + e.message);
         rlog(label + '  PubMed \u2717 ' + e.message, 'err');
       }
@@ -1136,7 +1162,10 @@
         try {
           const cr = await fetchCrossRef(meta.doi);
           if (cr && cr.title) { cr.source = 'pmid'; meta = cr; rlog(label + '  CrossRef enrich \u2713', 'ok'); }
-        } catch(e) { rlog(label + '  CrossRef enrich \u2717 ' + e.message, 'warn'); }
+        } catch(e) {
+          if (e.name === 'AbortError') throw e;
+          rlog(label + '  CrossRef enrich \u2717 ' + e.message, 'warn');
+        }
       }
       // Fallback: Semantic Scholar
       if (!meta) {
@@ -1145,6 +1174,7 @@
           meta = await fetchSemanticScholar('pmid', ids.pmid);
           rlog(label + '  Semantic Scholar \u2713', 'ok');
         } catch(e) {
+          if (e.name === 'AbortError') throw e;
           errors.push('Semantic Scholar: ' + e.message);
           rlog(label + '  Semantic Scholar \u2717 ' + e.message, 'err');
         }
@@ -1158,6 +1188,7 @@
         meta = await fetchCrossRef('10.2139/ssrn.' + ids.ssrn);
         if (meta) { meta.source = 'ssrn'; rlog(label + '  CrossRef \u2713', 'ok'); }
       } catch(e) {
+        if (e.name === 'AbortError') throw e;
         errors.push('CrossRef (SSRN): ' + e.message);
         rlog(label + '  CrossRef \u2717 ' + e.message, 'err');
       }
@@ -1361,6 +1392,30 @@
 
   function esc(s) { if (!s) return ''; const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
 
+  function renderMd(s) {
+    if (!s) return '';
+    // If it already looks like HTML (has tags), sanitize and return
+    if (/<[a-z][\s\S]*>/i.test(s)) {
+      // Allow only safe tags: ul, ol, li, p, br, strong, em, b, i
+      return s.replace(/<\/?(?!ul|ol|li|p|br|strong|em|b|i|\/)[^>]*>/gi, '');
+    }
+    // Simple markdown conversion
+    let h = esc(s);
+    h = h.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');  // **bold**
+    h = h.replace(/\*(.+?)\*/g, '<em>$1</em>');              // *italic*
+    h = h.replace(/^[-*]\s+(.+)$/gm, '<li>$1</li>');         // bullet points
+    if (h.includes('<li>')) {
+      // Wrap list items in <ul>, remove newlines between items
+      h = h.replace(/(<\/li>)\s*\n+\s*(<li>)/g, '$1$2');
+      h = '<ul>' + h.match(/<li>.*?<\/li>/gs).join('') + '</ul>';
+    }
+    h = h.replace(/\n{2,}/g, '</p><p>');                     // paragraphs
+    if (h.includes('</p>')) h = '<p>' + h + '</p>';
+    h = h.replace(/\n/g, '<br>');                            // line breaks
+    return h;
+  }
+
+
   /* ═══════════════════════════════════════════════════
      Render
      ═══════════════════════════════════════════════════ */
@@ -1390,13 +1445,7 @@
         statusCls='status-kept'; statusText='kept'; keptCount++;
       }
       else if (meta) {
-        const s = meta.source;
-        if (s==='arxiv')    { statusCls='status-ok'; statusText='arXiv'; }
-        else if (s==='pmid'){ statusCls='status-ok';  statusText='PubMed'; }
-        else if (s==='biorxiv'){ statusCls='status-ok'; statusText='bioRxiv'; }
-        else if (s==='medrxiv'){ statusCls='status-ok';  statusText='medRxiv'; }
-        else if (s==='ssrn'){ statusCls='status-ok'; statusText='SSRN'; }
-        else { statusCls='status-ok'; statusText='resolved'; }
+        statusCls='status-ok'; statusText='resolved';
       } else {
         const info = statusInfo[ref.key];
         if (info && info.errors?.length) {
@@ -1411,6 +1460,10 @@
       const cls = ref.kept ? 'ref-item kept' : 'ref-item';
       html += `<div class="${cls}${abs?' has-abstract':''}" style="animation-delay:${i*40}ms" data-key="${esc(ref.key||'')}" data-idx="${i}">`;
       html += `<span class="ref-actions">`;
+      if (meta && formatted) {
+        html += `<button class="btn-copy-ref" data-idx="${i}" title="Copy this reference">Copy</button>`;
+        html += `<button class="btn-copy-ref-md" data-idx="${i}" title="Copy this reference as Markdown">md</button>`;
+      }
       if (ref.key) html += `<button class="btn-refresh" data-idx="${i}" title="Re-fetch metadata">\u21BB</button>`;
       html += `<span class="ref-status ${statusCls}" data-status-key="${esc(ref.key||'')}" data-kept="${ref.kept?'1':''}">${statusText}</span>`;
       html += `</span>`;
@@ -1428,13 +1481,13 @@
       if (formatted) {
         html += `<span class="ref-text">${formatted}</span>`;
         if (meta.doi) html += `<br><a class="ref-link link-doi" href="https://doi.org/${esc(meta.doi)}" target="_blank" rel="noopener">doi:${esc(meta.doi)}</a>`;
-        if (ref.ids.arxiv) html += ` <a class="ref-link link-arxiv" href="https://arxiv.org/abs/${esc(ref.ids.arxiv)}" target="_blank" rel="noopener">arXiv:${esc(ref.ids.arxiv)}</a>`;
+        if (ref.ids.arxiv && !meta.doi) html += ` <a class="ref-link link-arxiv" href="https://arxiv.org/abs/${esc(ref.ids.arxiv)}" target="_blank" rel="noopener">arXiv:${esc(ref.ids.arxiv)}</a>`;
         if (ref.ids.pmid)  html += ` <a class="ref-link link-pmid" href="https://pubmed.ncbi.nlm.nih.gov/${esc(ref.ids.pmid)}/" target="_blank" rel="noopener">PMID:${esc(ref.ids.pmid)}</a>`;
       } else {
         html += `<span class="ref-text">${esc(ref.rest || ref.raw)}</span>`;
       }
 
-      if (sum) html += `<div class="ref-summary">${esc(sum)}</div>`;
+      if (sum) html += `<div class="ref-summary" data-idx="${i}"><div class="ref-summary-header"><span class="ref-summary-title">AI Summary</span><span class="ref-summary-toggle">▼</span></div><div class="ref-summary-body">${renderMd(sum)}</div></div>`;
       html += `</div>`;
     });
 
@@ -1444,10 +1497,20 @@
     if (keptCount) { statsKeptEl.textContent = keptCount+' kept'; statsKeptEl.style.display = ''; }
     else statsKeptEl.style.display = 'none';
 
+    // Hover on refs with abstracts -> show in console Abstract tab
     output.querySelectorAll('.has-abstract').forEach(el => {
-      el.addEventListener('mouseenter', showTooltip);
-      el.addEventListener('mousemove', moveTooltip);
-      el.addEventListener('mouseleave', hideTooltip);
+      el.addEventListener('mouseenter', () => {
+        const key = el.dataset.key;
+        const abs = abstracts[key];
+        const meta = fetchedMeta[key];
+        if (!abs) return;
+        resolveAbstractBody.innerHTML = `<div style="margin-bottom:8px;color:var(--accent);font-weight:600">${esc(meta?.title || 'Abstract')}</div><div style="color:#ccc;line-height:1.6">${esc(abs)}</div>`;
+        resolveLog.classList.add('active');
+        // Switch to abstract tab
+        resolveLogTabs.forEach(t => t.classList.toggle('active', t.dataset.tab === 'abstract'));
+        resolveLogBody.style.display = 'none';
+        resolveAbstractBody.style.display = '';
+      });
     });
 
     output.querySelectorAll('.ref-status').forEach(el => {
@@ -1475,26 +1538,31 @@
         renderOutput();
       });
     });
-  }
 
-  /* ═══ Tooltip ═══ */
-  function showTooltip(e) {
-    const abs = abstracts[e.currentTarget.dataset.key];
-    if (!abs) return;
-    ttContent.textContent = abs;
-    tooltip.style.display = 'block';
-    moveTooltip(e);
+    output.querySelectorAll('.btn-copy-ref').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        copyOneRef(parseInt(btn.dataset.idx, 10), btn);
+      });
+    });
+    output.querySelectorAll('.btn-copy-ref-md').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        copyOneRefMd(parseInt(btn.dataset.idx, 10), btn);
+      });
+    });
+
+    // Summary collapse toggle (individual)
+    output.querySelectorAll('.ref-summary-header').forEach(hdr => {
+      hdr.addEventListener('click', () => {
+        hdr.parentElement.classList.toggle('collapsed');
+      });
+    });
+
+    // Show/hide the toggle-all button based on whether there are summaries
+    const hasSummaries = output.querySelectorAll('.ref-summary').length > 0;
+    btnToggleSummaries.style.display = hasSummaries ? '' : 'none';
   }
-  function moveTooltip(e) {
-    const tw=tooltip.offsetWidth, th=tooltip.offsetHeight, ww=window.innerWidth, wh=window.innerHeight;
-    let l=e.clientX+16, t=e.clientY+16;
-    if (l+tw>ww-10) l=e.clientX-tw-10;
-    if (t+th>wh-10) t=e.clientY-th-10;
-    if (l<10) l=10;
-    if (t<10) t=10;
-    tooltip.style.left=l+'px'; tooltip.style.top=t+'px';
-  }
-  function hideTooltip() { tooltip.style.display='none'; }
 
   /* ═══ Status Tooltip ═══ */
   function buildStatusHTML(key, kept) {
@@ -1566,22 +1634,43 @@
       progressBar.classList.add('active'); setProgress(0);
       btnFormat.disabled = true;
       btnFormat.innerHTML = '<span class="spinner"></span>Resolving\u2026';
+      btnAbort.style.display = '';
+      btnAbort.textContent = 'Abort';
       showResolveLog();
       rlog('Resolving ' + toResolve.length + ' reference(s)\u2026');
 
+      let skipped = 0;
       for (let i=0; i<toResolve.length; i++) {
         if (i > 0) await delay(300);  // pace requests to avoid rate limits
+        const ref = toResolve[i];
+        currentRefAC = new AbortController();
         resolveLogCount.textContent = (i+1) + ' / ' + toResolve.length;
-        await resolveRef(toResolve[i]);
+        try {
+          await resolveRef(ref);
+        } catch(e) {
+          if (e.name === 'AbortError') {
+            skipped++;
+            rlog((ref.id || ref.key) + '  \u2717 aborted, skipping', 'warn');
+            statusInfo[ref.key] = { message: 'Aborted by user', errors: ['Aborted by user'] };
+          } else {
+            rlog((ref.id || ref.key) + '  \u2717 ' + e.message, 'err');
+          }
+        }
+        btnAbort.textContent = 'Abort';
         setProgress(((i+1)/toResolve.length)*100);
         renderOutput();
       }
+      currentRefAC = null;
 
       const ok = toResolve.filter(r => fetchedMeta[r.key]).length;
-      const fail = toResolve.length - ok;
-      rlog('Done: ' + ok + ' resolved' + (fail ? ', ' + fail + ' failed' : ''), fail ? 'warn' : 'ok');
+      const fail = toResolve.length - ok - skipped;
+      rlog('Done: ' + ok + ' resolved'
+           + (fail ? ', ' + fail + ' failed' : '')
+           + (skipped ? ', ' + skipped + ' aborted' : ''),
+           (fail || skipped) ? 'warn' : 'ok');
       btnFormat.disabled = false;
       btnFormat.textContent = 'Format';
+      btnAbort.style.display = 'none';
       setTimeout(() => progressBar.classList.remove('active'), 500);
       hideResolveLog();
     }
@@ -1637,6 +1726,47 @@
           if (r.ok) { const t = await r.text(); if (t.length>50) abstracts[ref.key]=t.trim(); }
         } catch(e){}
       }
+
+      // Semantic Scholar by DOI
+      if (!abstracts[ref.key] && meta.doi) {
+        try {
+          const s2 = await fetchSemanticScholar('doi', meta.doi);
+          if (s2?.abstract) abstracts[ref.key] = s2.abstract;
+        } catch(e){}
+      }
+
+      // Europe PMC by DOI (biomedical coverage)
+      if (!abstracts[ref.key] && meta.doi) {
+        try {
+          const r = await fetch('https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=DOI:%22'
+                    + encodeURIComponent(meta.doi) + '%22&format=json&resultType=core');
+          if (r.ok) {
+            const d = await r.json();
+            const hit = d.resultList?.result?.[0];
+            if (hit?.abstractText && hit.abstractText.length > 50) {
+              abstracts[ref.key] = decodeEntities(hit.abstractText).replace(/<[^>]+>/g,'').replace(/\s+/g,' ').trim();
+            }
+          }
+        } catch(e){}
+      }
+
+      // Last resort: Semantic Scholar title search (fuzzy match on title)
+      if (!abstracts[ref.key] && meta.title) {
+        try {
+          const q = encodeURIComponent(meta.title.slice(0, 300));
+          const r = await fetch('https://api.semanticscholar.org/graph/v1/paper/search?query='
+                    + q + '&fields=title,abstract&limit=3');
+          if (r.ok) {
+            const d = await r.json();
+            const norm = s => (s||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+            const want = norm(meta.title);
+            const hits = d.data || [];
+            const exact = hits.find(h => h.abstract && norm(h.title) === want);
+            const pick = exact || hits.find(h => h.abstract && norm(h.title).startsWith(want.slice(0,60)));
+            if (pick?.abstract) abstracts[ref.key] = pick.abstract;
+          }
+        } catch(e){}
+      }
     }
 
     btnAbstracts.disabled = false;
@@ -1684,10 +1814,22 @@
     btnSummarize.disabled = true;
     btnSummarize.innerHTML = '<span class="spinner"></span>';
     progressBar.classList.add('active'); setProgress(0);
+    showResolveLog(false);
+    rlog('Summarizing ' + toSum.length + ' reference(s)…');
+
+    const promptTemplate = llmPromptEl.value || 'Summarize: {title} by {authors}';
 
     for (let i=0; i<toSum.length; i++) {
       const ref = toSum[i], meta = fetchedMeta[ref.key], abs = abstracts[ref.key]||'';
-      const prompt = `Summarize this academic paper in exactly 2 concise sentences. Be specific about the contribution and findings.\n\nTitle: ${meta.title}\nAuthors: ${meta.authors.map(a=>a.full).join(', ')}\nJournal: ${meta.journal||'N/A'}\nYear: ${meta.year||'N/A'}\n${abs ? 'Abstract: '+abs : '(No abstract available.)'}`;
+      const label = ref.id || ref.key;
+      rlog(label + '  LLM → summarizing…');
+
+      const prompt = promptTemplate
+        .replace(/\{title\}/g, meta.title || 'N/A')
+        .replace(/\{authors\}/g, meta.authors.map(a=>a.full).join(', ') || 'N/A')
+        .replace(/\{journal\}/g, meta.journal || 'N/A')
+        .replace(/\{year\}/g, meta.year || 'N/A')
+        .replace(/\{abstract\}/g, abs ? 'Abstract: ' + abs : '(No abstract available.)');
 
       try {
         const reply = await llmEngine.chat.completions.create({
@@ -1696,16 +1838,23 @@
           temperature: 0.3
         });
         const text = reply.choices?.[0]?.message?.content?.trim();
-        if (text) summaries[ref.key] = text;
-        else summaries[ref.key] = '(Model returned empty response)';
+        if (text) {
+          summaries[ref.key] = text;
+          rlog(label + '  LLM ✓', 'ok');
+        } else {
+          summaries[ref.key] = '(Model returned empty response)';
+          rlog(label + '  LLM ✗ empty response', 'warn');
+        }
       } catch(e) {
         summaries[ref.key] = '(Summary failed: ' + e.message + ')';
+        rlog(label + '  LLM ✗ ' + e.message, 'err');
       }
 
       setProgress(((i+1)/toSum.length)*100);
       renderOutput();
     }
 
+    rlog('Done: ' + toSum.length + ' summarized', 'ok');
     btnSummarize.disabled = false;
     btnSummarize.classList.add('active');
     btnSummarize.textContent = 'AI Summaries \u2713';
@@ -1713,37 +1862,94 @@
   }
 
   /* ═══ Copy ═══ */
+  function buildRefCopy(item) {
+    const id = item.querySelector('.ref-id');
+    const text = item.querySelector('.ref-text');
+    const links = item.querySelectorAll('.ref-link');
+    let plain = '', html = '';
+    if (id) { plain += id.textContent + ' '; html += id.textContent + ' '; }
+    if (text) { plain += text.textContent; html += text.innerHTML; }
+    if (links.length) {
+      plain += ' '; html += ' ';
+      links.forEach(l => {
+        plain += l.textContent + ' ';
+        html += `<a href="${l.href}">${l.textContent}</a> `;
+      });
+    }
+    return { plain: plain.trim(), html: html.trim() };
+  }
+
+  function writeClip(plainText, htmlText) {
+    return navigator.clipboard.write([new ClipboardItem({
+      'text/plain': new Blob([plainText], { type: 'text/plain' }),
+      'text/html': new Blob([htmlText], { type: 'text/html' })
+    })]);
+  }
+
   function doCopy() {
     const items = output.querySelectorAll('.ref-item');
     if (!items.length) return;
-    const plainLines = [], htmlLines = [];
-    items.forEach(item => {
-      const id = item.querySelector('.ref-id');
-      const text = item.querySelector('.ref-text');
-      const links = item.querySelectorAll('.ref-link');
-      let plain = '', html = '';
-      if (id) { plain += id.textContent + ' '; html += id.textContent + ' '; }
-      if (text) { plain += text.textContent; html += text.innerHTML; }
-      if (links.length) {
-        plain += ' ';
-        html += ' ';
-        links.forEach(l => {
-          plain += l.textContent + ' ';
-          html += `<a href="${l.href}">${l.textContent}</a> `;
-        });
-      }
-      plainLines.push(plain.trim());
-      htmlLines.push(html.trim());
-    });
-    const plainText = plainLines.join('\n\n');
-    const htmlText = htmlLines.map(l => `<p style="margin:0 0 0.6em 0">${l}</p>`).join('\n');
-    navigator.clipboard.write([new ClipboardItem({
-      'text/plain': new Blob([plainText], { type: 'text/plain' }),
-      'text/html': new Blob([htmlText], { type: 'text/html' })
-    })]).then(() => {
+    const parts = Array.from(items).map(buildRefCopy);
+    const plainText = parts.map(p => p.plain).join('\n\n');
+    const htmlText = parts.map(p => `<p style="margin:0 0 0.6em 0">${p.html}</p>`).join('\n');
+    writeClip(plainText, htmlText).then(() => {
       btnCopy.textContent = 'Copied!';
       setTimeout(() => { btnCopy.textContent = 'Copy'; }, 1500);
     });
+  }
+
+  /* ═══ Copy as Markdown ═══ */
+  function htmlToMd(h) {
+    let s = h;
+    s = s.replace(/<\/?(strong|b)\b[^>]*>/gi, '**');
+    s = s.replace(/<\/?(em|i)\b[^>]*>/gi, '*');
+    s = s.replace(/<[^>]+>/g, '');
+    return decodeEntities(s).replace(/\s+/g, ' ').trim();
+  }
+
+  function buildRefMd(ref, i) {
+    const style = styleSelect.value;
+    const meta = ref.key ? fetchedMeta[ref.key] : null;
+    const formatted = meta ? formatRef(meta, style) : null;
+    let line = ref.id || '';
+    if (formatted) {
+      line += (line ? ' ' : '') + htmlToMd(formatted);
+      if (meta.doi)                    line += ` [doi:${meta.doi}](https://doi.org/${meta.doi})`;
+      if (ref.ids?.arxiv && !meta.doi) line += ` [arXiv:${ref.ids.arxiv}](https://arxiv.org/abs/${ref.ids.arxiv})`;
+      if (ref.ids?.pmid)               line += ` [PMID:${ref.ids.pmid}](https://pubmed.ncbi.nlm.nih.gov/${ref.ids.pmid}/)`;
+    } else {
+      line += (line ? ' ' : '') + (ref.rest || ref.raw || '');
+    }
+    return line.trim();
+  }
+
+  function doCopyMd() {
+    if (!parsedRefs.length) return;
+    const md = parsedRefs.map((r, i) => buildRefMd(r, i)).join('\n');
+    navigator.clipboard.writeText(md).then(() => {
+      btnCopyMd.textContent = 'Copied!';
+      setTimeout(() => { btnCopyMd.textContent = 'Copy md'; }, 1500);
+    });
+  }
+
+  /* ═══ Per-item copy (small buttons inside each ref) ═══ */
+  function flashCopied(btn, originalLabel) {
+    btn.classList.add('copied');
+    btn.textContent = '\u2713';
+    setTimeout(() => { btn.classList.remove('copied'); btn.textContent = originalLabel; }, 1200);
+  }
+
+  function copyOneRef(idx, btn) {
+    const item = output.querySelector(`.ref-item[data-idx="${idx}"]`);
+    if (!item) return;
+    const { plain, html } = buildRefCopy(item);
+    writeClip(plain, `<p style="margin:0">${html}</p>`).then(() => flashCopied(btn, 'Copy'));
+  }
+
+  function copyOneRefMd(idx, btn) {
+    const ref = parsedRefs[idx];
+    if (!ref) return;
+    navigator.clipboard.writeText(buildRefMd(ref, idx)).then(() => flashCopied(btn, 'md'));
   }
 
   /* ═══ Input panel: Copy / Download ═══ */
@@ -1774,6 +1980,13 @@
   /* ═══ Events ═══ */
   btnFormat.addEventListener('click', doFormat);
   btnCopy.addEventListener('click', doCopy);
+  btnAbort.addEventListener('click', () => {
+    if (currentRefAC && !currentRefAC.signal.aborted) {
+      currentRefAC.abort();
+      btnAbort.textContent = 'Aborting\u2026';
+    }
+  });
+  btnCopyMd.addEventListener('click', doCopyMd);
   btnAbstracts.addEventListener('click', doFetchAbstracts);
   btnSummarize.addEventListener('click', doSummarize);
 
@@ -1795,13 +2008,34 @@
     URL.revokeObjectURL(a.href);
   });
 
+  let summariesCollapsed = false;
+  btnToggleSummaries.addEventListener('click', () => {
+    summariesCollapsed = !summariesCollapsed;
+    output.querySelectorAll('.ref-summary').forEach(el => {
+      el.classList.toggle('collapsed', summariesCollapsed);
+    });
+    btnToggleSummaries.textContent = (summariesCollapsed ? '▶' : '▼') + ' Summaries';
+  });
+
   btnClear.addEventListener('click', () => {
+    if (input.value.trim() && !confirm('Clear all references and cached data?')) return;
     input.value = '';
     parsedRefs = []; fetchedMeta = {}; abstracts = {}; summaries = {}; statusInfo = {};
     btnAbstracts.classList.remove('active'); btnAbstracts.textContent = 'Abstracts';
     btnSummarize.classList.remove('active'); btnSummarize.textContent = 'AI Summaries';
+    summariesCollapsed = false; btnToggleSummaries.textContent = '▼ Summaries';
     renderOutput();
     lineCountEl.textContent = '0 lines';
+  });
+
+  // Undo/Redo for textarea
+  btnUndo.addEventListener('click', () => {
+    input.focus();
+    document.execCommand('undo');
+  });
+  btnRedo.addEventListener('click', () => {
+    input.focus();
+    document.execCommand('redo');
   });
 
   input.addEventListener('input', () => {
@@ -1838,6 +2072,67 @@
       confirmBtn.textContent = 'Retry';
       llmLoading = false;
     }
+  });
+
+  /* ── Panel resizer (horizontal) ── */
+  const panelResizer = $('panelResizer');
+  const panelLeft = document.querySelector('.panel-left');
+  const mainEl = document.querySelector('main');
+  let panelDragging = false;
+
+  panelResizer.addEventListener('mousedown', (e) => {
+    e.preventDefault();
+    panelDragging = true;
+    panelResizer.classList.add('dragging');
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+  });
+
+  /* ── Console resizer (vertical) ── */
+  const consoleResizer = $('consoleResizer');
+  const panelRight = document.querySelector('.panel-right');
+  let consoleDragging = false;
+
+  consoleResizer.addEventListener('mousedown', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    consoleDragging = true;
+    consoleResizer.classList.add('dragging');
+    document.body.style.cursor = 'ns-resize';
+    document.body.style.userSelect = 'none';
+  });
+
+  /* ── Unified mousemove/mouseup ── */
+  document.addEventListener('mousemove', (e) => {
+    if (panelDragging) {
+      const mainRect = mainEl.getBoundingClientRect();
+      const newWidth = e.clientX - mainRect.left;
+      const minW = 200, maxW = mainRect.width - 200;
+      if (newWidth >= minW && newWidth <= maxW) {
+        panelLeft.style.width = newWidth + 'px';
+      }
+    }
+    if (consoleDragging) {
+      const panelRect = panelRight.getBoundingClientRect();
+      const newHeight = panelRect.bottom - e.clientY;
+      const minH = 60, maxH = panelRect.height * 0.8;
+      if (newHeight >= minH && newHeight <= maxH) {
+        resolveLog.style.height = newHeight + 'px';
+      }
+    }
+  });
+
+  document.addEventListener('mouseup', () => {
+    if (panelDragging) {
+      panelDragging = false;
+      panelResizer.classList.remove('dragging');
+    }
+    if (consoleDragging) {
+      consoleDragging = false;
+      consoleResizer.classList.remove('dragging');
+    }
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
   });
 
   /* ── Preloaded examples showing different identifier types ── */
