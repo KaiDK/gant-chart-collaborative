@@ -65,7 +65,19 @@
   header h1 { font-size: 20px; font-weight: 700; letter-spacing: 0.5px; }
   header h1 span { color: var(--accent); font-style: italic; }
 
-  .header-controls { display: flex; align-items: center; gap: 12px; }
+  .header-controls { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: flex-end; }
+  .export-options {
+    display: flex; align-items: center; gap: 10px;
+    font-family: var(--font-ui); font-size: 11px; color: var(--text-light);
+  }
+  .export-options label {
+    display: flex; align-items: center; gap: 5px;
+    cursor: pointer; user-select: none; white-space: nowrap;
+  }
+  .export-options input {
+    accent-color: var(--accent);
+    width: 13px; height: 13px; cursor: pointer;
+  }
 
   select, button {
     font-family: var(--font-ui);
@@ -195,6 +207,10 @@
   .link-doi { color: var(--doi-color); }
   .link-arxiv { color: var(--arxiv-color); }
   .link-pmid { color: var(--pmid-color); }
+  .ref-item .ref-citations {
+    display: inline-block; margin-top: 4px; font-family: var(--font-mono);
+    font-size: 11px; opacity: 0.6; color: var(--muted, #888);
+  }
 
   .ref-item .ref-actions {
     position: absolute; top: 10px; right: 12px;
@@ -213,18 +229,18 @@
   .ref-item:hover .btn-refresh { opacity: 1; }
   .ref-item .btn-refresh:hover { color: var(--accent); border-color: var(--accent); background: var(--accent-light); }
   .ref-item .btn-refresh.loading { opacity: 1; animation: spin 0.6s linear infinite; }
-  .ref-item .btn-copy-ref, .ref-item .btn-copy-ref-md, .ref-item .btn-abstract {
+  .ref-item .btn-copy-ref, .ref-item .btn-copy-ref-md, .ref-item .btn-copy-ref-bib, .ref-item .btn-abstract {
     background: none; border: 1px solid var(--border-light); border-radius: 3px;
     color: var(--text-light); cursor: pointer; padding: 1px 6px; line-height: 1;
     font-size: 10px; font-family: var(--font-ui); font-weight: 600;
     text-transform: uppercase; letter-spacing: 0.4px;
     transition: all 0.15s; opacity: 0;
   }
-  .ref-item:hover .btn-copy-ref, .ref-item:hover .btn-copy-ref-md, .ref-item:hover .btn-abstract { opacity: 1; }
-  .ref-item .btn-copy-ref:hover, .ref-item .btn-copy-ref-md:hover, .ref-item .btn-abstract:hover {
+  .ref-item:hover .btn-copy-ref, .ref-item:hover .btn-copy-ref-md, .ref-item:hover .btn-copy-ref-bib, .ref-item:hover .btn-abstract { opacity: 1; }
+  .ref-item .btn-copy-ref:hover, .ref-item .btn-copy-ref-md:hover, .ref-item .btn-copy-ref-bib:hover, .ref-item .btn-abstract:hover {
     color: var(--accent); border-color: var(--accent); background: var(--accent-light);
   }
-  .ref-item .btn-copy-ref.copied, .ref-item .btn-copy-ref-md.copied {
+  .ref-item .btn-copy-ref.copied, .ref-item .btn-copy-ref-md.copied, .ref-item .btn-copy-ref-bib.copied {
     opacity: 1; color: var(--success); border-color: var(--success); background: #e8f5e8;
   }
   .status-ok { color: var(--success); background: #e8f5e8; }
@@ -324,6 +340,57 @@
   .modal .modal-actions { display: flex; justify-content: flex-end; gap: 10px; }
   .modal label { display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 6px; font-weight: 600; }
   .modal select { width: 100%; margin-bottom: 16px; }
+
+  .modal-wide { max-width: 1100px; width: 95%; max-height: 90vh; display: flex; flex-direction: column; }
+  .cite-md-body {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+    flex: 1; min-height: 0; margin-bottom: 14px;
+  }
+  .cite-md-pane { display: flex; flex-direction: column; min-height: 0; }
+  .cite-md-pane > label { margin-bottom: 4px; }
+  #citeMdInput {
+    flex: 1; width: 100%; min-height: 380px;
+    font-family: var(--font-mono); font-size: 12px; line-height: 1.5;
+    padding: 10px; border: 1px solid var(--border); border-radius: 6px; resize: none;
+    background: var(--bg-panel); color: var(--text);
+  }
+  .cite-md-preview {
+    flex: 1; overflow: auto; padding: 14px 18px;
+    border: 1px solid var(--border); border-radius: 6px;
+    background: var(--bg-panel); font-size: 13px; line-height: 1.65;
+    min-height: 380px;
+  }
+  .cite-md-preview h1, .cite-md-preview h2, .cite-md-preview h3 { margin: 0.8em 0 0.4em; }
+  .cite-md-preview h1 { font-size: 18px; } .cite-md-preview h2 { font-size: 16px; } .cite-md-preview h3 { font-size: 14px; }
+  .cite-md-preview p { margin: 0 0 0.8em; }
+  .cite-md-preview ul, .cite-md-preview ol { margin: 0 0 0.8em 1.4em; }
+  .cite-md-preview a { color: var(--accent); }
+  .cite-md-preview code {
+    background: var(--bg); padding: 1px 4px; border-radius: 3px;
+    font-family: var(--font-mono); font-size: 90%;
+  }
+  .cite-ref {
+    display: inline-block;
+    background: var(--accent-light); color: var(--accent);
+    padding: 1px 5px; border-radius: 3px; font-size: 92%;
+    cursor: pointer; border: 1px solid transparent; transition: all 0.12s;
+    text-decoration: none;
+  }
+  a.cite-ref { text-decoration: none; }
+  .cite-ref:hover { border-color: var(--accent); background: #fff; text-decoration: none; }
+  .cite-ref.cite-unknown {
+    background: #fce8e8; color: var(--error); cursor: not-allowed;
+  }
+  .cite-tooltip {
+    display: none; position: fixed; z-index: 3000;
+    max-width: 520px; background: var(--bg-panel); color: var(--text);
+    border: 1px solid var(--border); border-radius: 8px;
+    box-shadow: var(--shadow-lg);
+    padding: 12px 14px; font-size: 12px; line-height: 1.55;
+    font-family: var(--font-ui); pointer-events: none;
+  }
+  .cite-tooltip .cite-tt-id { font-family: var(--font-mono); font-weight: 700; color: var(--accent); margin-right: 6px; }
+  .cite-tooltip .cite-tt-err { color: var(--error); font-style: italic; }
 
   .resolve-log {
     position: absolute; bottom: 0; left: 0; right: 0;
@@ -430,6 +497,12 @@
     <button class="btn btn-secondary btn-copy-all" id="btnCopy" title="Copy formatted output">Copy</button>
     <button class="btn btn-secondary btn-copy-all" id="btnCopyMd" title="Copy formatted output as Markdown">Copy md</button>
     <button class="btn btn-secondary btn-copy-all" id="btnExportBib" title="Download BibTeX cache as .bib file">.bib</button>
+    <button class="btn btn-secondary btn-copy-all" id="btnCiteMd" title="Preview Markdown text with citation keys">Cite MD</button>
+    <div class="export-options" title="Optional fields included in the .bib export">
+      <label><input type="checkbox" id="exportIncludeSummaries" checked>AI summaries</label>
+      <label><input type="checkbox" id="exportIncludeAbstracts" checked>Abstracts</label>
+      <label title="Use the original first-word key from each input line as the BibTeX citation key"><input type="checkbox" id="exportUseOriginalKeys" checked>Original keys</label>
+    </div>
     <span style="width:1px;height:20px;background:var(--border);margin:0 8px"></span>
     <button class="btn btn-secondary" id="btnAbstracts" title="Fetch abstracts">Abstracts</button>
     <button class="btn btn-secondary" id="btnSummarize" title="Generate AI summaries using a local in-browser model (WebLLM)">AI Summaries</button>
@@ -444,6 +517,7 @@
       <div class="badge-group">
         <button class="btn-icon" id="btnUndo" title="Undo (Ctrl+Z)">Undo</button>
         <button class="btn-icon" id="btnRedo" title="Redo (Ctrl+Y)">Redo</button>
+        <button class="btn-icon" id="btnAddMissingFromBib" title="Append DOIs present in the BibTeX cache but missing from the reference list">Add missing from bib</button>
         <button class="btn-icon" id="btnDownloadInput" title="Download input as .txt file">Save input</button>
       </div>
     </div>
@@ -494,6 +568,30 @@
 <div class="abstract-tooltip" id="abstractTooltip">
   <span class="tt-title">Abstract</span>
   <span id="ttContent"></span>
+</div>
+
+<div class="cite-tooltip" id="citeTooltip"></div>
+
+<div class="modal-overlay" id="citeMdModal">
+  <div class="modal modal-wide">
+    <h3>Citation Preview</h3>
+    <p style="margin-bottom:12px">Paste Markdown text below. Reference your loaded citations using <code>[Key]</code> or <code>@Key</code> — hover any citation in the preview to see the full reference.</p>
+    <div class="cite-md-body">
+      <div class="cite-md-pane">
+        <label for="citeMdInput">Markdown input</label>
+        <textarea id="citeMdInput" placeholder="# My manuscript&#10;&#10;The attention mechanism [Vaswani2017] enabled transformer models. Building on this, @Devlin2019 introduced BERT.&#10;&#10;- Protein folding: [Jumper2021]&#10;- Diffusion models: [LDM2022]"></textarea>
+      </div>
+      <div class="cite-md-pane">
+        <label>Preview</label>
+        <div class="cite-md-preview" id="citeMdPreview"><em style="color:var(--text-muted)">Type Markdown on the left…</em></div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-sm btn-outline" id="citeMdCopyHtml" title="Copy rendered HTML">Copy HTML</button>
+      <button class="btn btn-sm btn-outline" id="citeMdExportHtml" title="Download a standalone HTML file with interactive citation hovers">Export HTML</button>
+      <button class="btn btn-sm btn-primary" id="citeMdClose">Close</button>
+    </div>
+  </div>
 </div>
 
 <div class="status-tooltip" id="statusTooltip">
@@ -548,6 +646,7 @@ Year: {year}
   const emptyState  = $('emptyState');
   const styleSelect = $('styleSelect');
   const btnFormat   = $('btnFormat');
+  const btnSaveOutput = $('btnSaveOutput');
   const btnCopy     = $('btnCopy');
   const btnCopyMd   = $('btnCopyMd');
   const btnAbort    = $('btnAbort');
@@ -558,6 +657,9 @@ Year: {year}
   const btnAbstracts= $('btnAbstracts');
   const btnSummarize= $('btnSummarize');
   const btnToggleSummaries = $('btnToggleSummaries');
+  const exportIncludeSummaries = $('exportIncludeSummaries');
+  const exportIncludeAbstracts = $('exportIncludeAbstracts');
+  const exportUseOriginalKeys  = $('exportUseOriginalKeys');
   const btnClear    = $('btnClear');
   const btnUndo     = $('btnUndo');
   const btnRedo     = $('btnRedo');
@@ -718,7 +820,17 @@ Year: {year}
     return null;
   }
 
-  function parseLines(text) {
+  // Populate `ids` fields (doi/arxiv/pmid/ssrn/source) from an internal rkey
+  // so that downstream rendering picks the correct source tag and link set.
+  function applyRkeyToIds(rkey, ids) {
+    if (rkey.startsWith('doi:'))        { ids.doi   = rkey.slice(4); }
+    else if (rkey.startsWith('arxiv:')) { ids.arxiv = rkey.slice(6); ids.source = ids.source || 'arxiv'; }
+    else if (rkey.startsWith('pmid:'))  { ids.pmid  = rkey.slice(5); ids.source = ids.source || 'pmid'; }
+    else if (rkey.startsWith('ssrn:'))  { ids.ssrn  = rkey.slice(5); ids.source = ids.source || 'ssrn'; }
+  }
+
+  function parseLines(text, citeKeyMap) {
+    citeKeyMap = citeKeyMap || {};
     const [refPart] = splitBibtex(text);
     return refPart.split('\n').filter(l => l.trim()).map(line => {
       const trimmed = line.trim();
@@ -727,7 +839,25 @@ Year: {year}
       const id   = firstSpace === -1 ? trimmed : trimmed.slice(0, firstSpace);
       const rest = firstSpace === -1 ? '' : trimmed.slice(firstSpace + 1).trim();
       const ids  = extractIdentifiers(rest);
-      const key  = resolveKey(ids);
+      let key    = resolveKey(ids);
+
+      // Fallback: allow [@citekey] / @citekey references resolved against the
+      // current BibTeX cache so users can reference cache-only entries that
+      // have no DOI/arXiv/PMID/SSRN identifier.
+      if (!key) {
+        const citeKeyRe = /\[@([A-Za-z0-9_.:\-]+)\]|(?:^|[\s(,;:\[])@([A-Za-z0-9_.:\-]+)/g;
+        let m;
+        while ((m = citeKeyRe.exec(line)) !== null) {
+          const ck = m[1] || m[2];
+          const rkey = citeKeyMap[ck];
+          if (rkey) {
+            key = rkey;
+            applyRkeyToIds(rkey, ids);
+            break;
+          }
+        }
+      }
+
       return { raw: line, id, rest, ids, key, kept: !key };
     });
   }
@@ -747,11 +877,23 @@ Year: {year}
   }
 
   function bibCiteKey(rkey) {
-    return rkey.replace(/[^a-zA-Z0-9_.-]/g, '_');
+    // Internal rkeys of the form `citekey:<original>` represent cache-only
+    // entries that have no external identifier; preserve the original citekey
+    // on export rather than embedding the internal prefix.
+    const key = rkey && rkey.startsWith('citekey:') ? rkey.slice(8) : rkey;
+    return (key || '').replace(/[^a-zA-Z0-9_.-]/g, '_').replace(/^[_.-]+|[_.-]+$/g, '');
   }
 
-  function metaToBibtex(rkey, meta) {
-    const ck = bibCiteKey(rkey);
+  function sanitizeBibtexValue(v) {
+    return String(v || '').replace(/[{}]/g, '').replace(/\r/g, '').trim();
+  }
+
+  function metaToBibtex(rkey, meta, options = {}) {
+    const includeAbstracts = options.includeAbstracts !== false;
+    const includeSummaries = options.includeSummaries !== false;
+    const abstractText = options.abstractText ?? abstracts[rkey];
+    const summaryText = options.summaryText ?? summaries[rkey];
+    const ck = bibCiteKey(options.customKey || rkey);
     const type = (meta.type === 'journal-article' || meta.journal) ? 'article'
                : meta.type === 'proceedings-article' ? 'inproceedings'
                : meta.source === 'arxiv' ? 'misc' : 'misc';
@@ -772,14 +914,23 @@ Year: {year}
     f('doi', meta.doi);
     f('url', meta.url);
     f('source', meta.source);
-    if (abstracts[rkey]) {
-      f('abstract', abstracts[rkey].replace(/[{}]/g, ''));
+    // Persist internal rkey so that custom citekeys don't break cache round-trip
+    if (rkey) f('rkey', rkey);
+    if (meta.citationCount != null) f('citations', String(meta.citationCount));
+    if (includeAbstracts && abstractText) {
+      f('abstract', sanitizeBibtexValue(abstractText));
+    }
+    if (includeSummaries && summaryText) {
+      f('aisummary', sanitizeBibtexValue(summaryText));
     }
     lines.push('}');
     return lines.join('\n');
   }
 
-  function parseBibtexBlock(bib) {
+  function parseBibtexBlock(bib, stores = {}) {
+    const abstractStore = stores.abstractStore || null;
+    const summaryStore = stores.summaryStore || null;
+    const citeKeyStore = stores.citeKeyStore || null;
     const entries = new Map();
     if (!bib.trim()) return entries;
 
@@ -842,11 +993,13 @@ Year: {year}
           publisher: fields.publisher || '',
           url: fields.url || '',
           abstract: fields.abstract || null,
-          source: fields.source || 'crossref'
+          source: fields.source || 'crossref',
+          citationCount: (fields.citations != null && fields.citations !== '') ? parseInt(fields.citations, 10) : null
         });
 
         let rkey = null;
-        if (meta.doi) rkey = 'doi:' + meta.doi;
+        if (fields.rkey) rkey = fields.rkey;
+        else if (meta.doi) rkey = 'doi:' + meta.doi;
         else {
           const ck = ckMatch[1];
           if (ck.startsWith('arxiv_'))      rkey = 'arxiv:' + ck.slice(6).replace(/_/g, '/');
@@ -855,22 +1008,53 @@ Year: {year}
           else if (ck.startsWith('doi_'))     rkey = 'doi:' + ck.slice(4).replace(/_/g, '/');
         }
 
+        // Cache-only entries (no DOI / arXiv / PMID / SSRN) still deserve to
+        // be kept: address them via the BibTeX citation key itself so users
+        // can reference them via [@citekey] from the input pane.
+        if (!rkey && ckMatch[1]) rkey = 'citekey:' + ckMatch[1].trim();
+
         if (!rkey) continue;
 
         entries.set(rkey, meta);
-        if (meta.abstract) abstracts[rkey] = meta.abstract;
+        if (meta.abstract && abstractStore) abstractStore[rkey] = meta.abstract;
+        if (fields.aisummary && summaryStore) summaryStore[rkey] = fields.aisummary;
+        if (citeKeyStore) citeKeyStore[rkey] = ckMatch[1].trim();
       } catch(e) { /* skip malformed entry */ }
     }
 
     return entries;
   }
 
-  function buildBibtexSection() {
-    const keys = Object.keys(fetchedMeta);
+  function readBibtexCache(text) {
+    const [, bibBlock] = splitBibtex(text);
+    const metaStore = {};
+    const abstractStore = {};
+    const summaryStore = {};
+    const citeKeyStore = {};
+    if (!bibBlock.trim()) return { metaStore, abstractStore, summaryStore, citeKeyStore };
+    const cached = parseBibtexBlock(bibBlock, { abstractStore, summaryStore, citeKeyStore });
+    for (const [rkey, meta] of cached) metaStore[rkey] = meta;
+    return { metaStore, abstractStore, summaryStore, citeKeyStore };
+  }
+
+  function buildBibtexSection(options = {}) {
+    const metaStore = options.metaStore || fetchedMeta;
+    const abstractStore = options.abstractStore || abstracts;
+    const summaryStore = options.summaryStore || summaries;
+    const includeAbstracts = options.includeAbstracts !== false;
+    const includeSummaries = options.includeSummaries !== false;
+    const originalKeys = options.originalKeys || null;
+    const keys = Object.keys(metaStore);
     if (!keys.length) return '';
     const parts = ['\n\n' + BIBTEX_SEP + '\n'];
     for (const rkey of keys) {
-      parts.push(metaToBibtex(rkey, fetchedMeta[rkey]));
+      parts.push(metaToBibtex(rkey, metaStore[rkey], {
+        includeAbstracts,
+        includeSummaries,
+        abstractText: abstractStore[rkey],
+        summaryText: summaryStore[rkey],
+        customKey: originalKeys ? originalKeys[rkey] : null
+      }));
       parts.push('');
     }
     return parts.join('\n');
@@ -878,7 +1062,13 @@ Year: {year}
 
   function updateTextareaBibtex() {
     const [refPart] = splitBibtex(input.value);
-    input.value = refPart + buildBibtexSection();
+    const originalKeys = (exportUseOriginalKeys && exportUseOriginalKeys.checked)
+      ? buildOriginalKeysMap() : null;
+    input.value = refPart + buildBibtexSection({ originalKeys });
+  }
+
+  function bibtexSectionToExport(text) {
+    return text.replace(/^\s*%% BIBTEX CACHE %%\s*/, '').trim();
   }
 
   /* ═══════════════════════════════════════════════════
@@ -947,7 +1137,8 @@ Year: {year}
       journal: decodeEntities(o.journal||''), volume: decodeEntities(o.volume||''), issue: decodeEntities(o.issue||''),
       pages: decodeEntities(o.pages||''), publisher: decodeEntities(o.publisher||''),
       type: o.type||'journal-article', url: o.url||'',
-      abstract: decodeEntities(o.abstract||'')||null, source: o.source||'crossref'
+      abstract: decodeEntities(o.abstract||'')||null, source: o.source||'crossref',
+      citationCount: (o.citationCount != null && !isNaN(o.citationCount)) ? Number(o.citationCount) : null
     };
   }
 
@@ -970,7 +1161,8 @@ Year: {year}
       publisher: d.publisher||'', type: d.type||'journal-article',
       url: d.URL || ('https://doi.org/'+doi),
       abstract: d.abstract ? d.abstract.replace(/<[^>]+>/g,'').trim() : null,
-      source: 'crossref'
+      source: 'crossref',
+      citationCount: d['is-referenced-by-count'] ?? null
     });
   }
 
@@ -1014,7 +1206,7 @@ Year: {year}
     else if (idType === 'pmid') paperId = 'PMID:' + idValue;
     else throw new Error('Unsupported Semantic Scholar ID type: ' + idType);
 
-    const fields = 'title,authors,year,venue,externalIds,abstract,publicationDate,journal';
+    const fields = 'title,authors,year,venue,externalIds,abstract,publicationDate,journal,citationCount';
     const r = await fetchWithRetry('https://api.semanticscholar.org/graph/v1/paper/' + paperId
               + '?fields=' + fields);
     if (!r.ok) throw new Error(`Semantic Scholar returned HTTP ${r.status} for ${paperId}`);
@@ -1049,8 +1241,18 @@ Year: {year}
       pages: d.journal?.pages || '',
       url,
       abstract: d.abstract || null,
-      source
+      source,
+      citationCount: d.citationCount ?? null
     });
+  }
+
+  /* ── OpenAlex citation-count fallback (CORS-friendly, no auth) ── */
+  async function fetchOpenAlexCitationCount(doi) {
+    const r = await fetchWithRetry('https://api.openalex.org/works/doi:' + encodeURIComponent(doi),
+                          { headers: { Accept: 'application/json' } });
+    if (!r.ok) throw new Error(`OpenAlex returned HTTP ${r.status} for DOI "${doi}"`);
+    const d = await r.json();
+    return (d.cited_by_count != null) ? Number(d.cited_by_count) : null;
   }
 
   async function fetchPubMed(pmid) {
@@ -1211,6 +1413,20 @@ Year: {year}
         message: 'All resolution attempts failed',
         errors
       };
+    }
+
+    // Citation count fallback via OpenAlex when missing (arXiv/DataCite/etc.)
+    if (meta && meta.doi && (meta.citationCount == null)) {
+      try {
+        const c = await fetchOpenAlexCitationCount(meta.doi);
+        if (c != null) {
+          meta.citationCount = c;
+          rlog(label + '  OpenAlex citations \u2713 ' + c, 'ok');
+        }
+      } catch(e) {
+        if (e.name === 'AbortError') throw e;
+        rlog(label + '  OpenAlex citations \u2717 ' + e.message, 'warn');
+      }
     }
     return meta;
   }
@@ -1415,6 +1631,370 @@ Year: {year}
     return h;
   }
 
+  /* ═══════════════════════════════════════════════════
+     Citation Markdown preview
+     ═══════════════════════════════════════════════════ */
+
+  // Richer Markdown renderer used by the Cite MD modal. Handles headings,
+  // bold/italic/code, links, ordered/unordered lists, paragraphs and line
+  // breaks. Citation tokens are pre-replaced with opaque placeholders so that
+  // they survive HTML escaping, and are restored to <span class="cite-ref">
+  // tokens after rendering.
+  function renderMdFull(src) {
+    if (!src) return '';
+    // Protect fenced code blocks first
+    const codeBlocks = [];
+    src = src.replace(/```([\s\S]*?)```/g, (_, code) => {
+      codeBlocks.push(code);
+      return `\u0000CODE${codeBlocks.length - 1}\u0000`;
+    });
+
+    let h = esc(src);
+
+    // Headings (up to h3)
+    h = h.replace(/^###\s+(.+)$/gm, '<h3>$1</h3>');
+    h = h.replace(/^##\s+(.+)$/gm, '<h2>$1</h2>');
+    h = h.replace(/^#\s+(.+)$/gm, '<h1>$1</h1>');
+
+    // Inline code
+    h = h.replace(/`([^`\n]+)`/g, '<code>$1</code>');
+    // Bold and italic
+    h = h.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+    h = h.replace(/(^|[^*])\*([^*\n]+)\*/g, '$1<em>$2</em>');
+    // Links [text](url)
+    h = h.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+
+    // Lists: group consecutive bullet / numbered lines
+    const lines = h.split('\n');
+    const out = [];
+    let i = 0;
+    while (i < lines.length) {
+      const line = lines[i];
+      const ulM = /^\s*[-*]\s+(.+)$/.exec(line);
+      const olM = /^\s*\d+\.\s+(.+)$/.exec(line);
+      if (ulM || olM) {
+        const tag = ulM ? 'ul' : 'ol';
+        const re = ulM ? /^\s*[-*]\s+(.+)$/ : /^\s*\d+\.\s+(.+)$/;
+        const items = [];
+        while (i < lines.length && re.test(lines[i])) {
+          items.push('<li>' + lines[i].replace(re, '$1') + '</li>');
+          i++;
+        }
+        out.push('<' + tag + '>' + items.join('') + '</' + tag + '>');
+      } else {
+        out.push(line);
+        i++;
+      }
+    }
+    h = out.join('\n');
+
+    // Paragraphs on blank-line-separated chunks that aren't block-level already
+    h = h.replace(/\n{2,}/g, '\n\n');
+    h = h.split(/\n\n+/).map(block => {
+      const b = block.trim();
+      if (!b) return '';
+      if (/^<(h\d|ul|ol|li|pre|blockquote|p)[\s>]/i.test(b)) return b;
+      return '<p>' + b.replace(/\n/g, '<br>') + '</p>';
+    }).join('\n');
+
+    // Restore fenced code
+    h = h.replace(/\u0000CODE(\d+)\u0000/g, (_, n) => '<pre><code>' + esc(codeBlocks[+n]) + '</code></pre>');
+    return h;
+  }
+
+  // Build a lookup from citation key -> { ref, idx } using parsedRefs' original
+  // ids plus the sanitized BibTeX citekey variant for robustness.
+  function buildCitationIndex() {
+    const idx = {};
+    parsedRefs.forEach((ref, i) => {
+      if (!ref.id) return;
+      const entry = { ref, idx: i };
+      if (!idx[ref.id]) idx[ref.id] = entry;
+      const bc = bibCiteKey(ref.id);
+      if (bc && !idx[bc]) idx[bc] = entry;
+    });
+    return idx;
+  }
+
+  // Replace [Key] and @Key citation tokens with placeholders before MD render,
+  // collecting metadata so they can be restored as interactive spans after.
+  function extractCiteTokens(src, index) {
+    const tokens = [];
+    const CITE_KEY = /[A-Za-z0-9_.:\-]+/;
+    // Bracketed form: [Key] (not followed by '(' to avoid MD links)
+    let out = src.replace(/\[(@?[A-Za-z0-9_.:\-]+)\](?!\()/g, (full, raw) => {
+      const k = raw.replace(/^@/, '');
+      const hit = index[k];
+      tokens.push({ display: full, key: k, hit });
+      return `\u0001CITE${tokens.length - 1}\u0001`;
+    });
+    // Pandoc-style: @Key (avoid emails: char before must be start-of-string,
+    // whitespace, or one of the grouping/separator punctuation characters —
+    // including `[` so the first key in `[@a; @b; @c]` is recognised).
+    out = out.replace(/(^|[\s(,;:\[])@([A-Za-z0-9_.:\-]+)/g, (full, pre, k) => {
+      const hit = index[k];
+      tokens.push({ display: '@' + k, key: k, hit });
+      return pre + `\u0001CITE${tokens.length - 1}\u0001`;
+    });
+    return { text: out, tokens };
+  }
+
+  // Resolve the most useful external URL for a reference (DOI > arXiv > PMID
+  // > SSRN > meta.url). Returns null if none is available.
+  function refExternalUrl(ref) {
+    if (!ref) return null;
+    const meta = ref.key ? fetchedMeta[ref.key] : null;
+    const doi = meta?.doi || (ref.ids && ref.ids.doi) || null;
+    if (doi) return 'https://doi.org/' + doi;
+    if (ref.ids?.arxiv) return 'https://arxiv.org/abs/' + ref.ids.arxiv;
+    if (ref.ids?.pmid)  return 'https://pubmed.ncbi.nlm.nih.gov/' + ref.ids.pmid + '/';
+    if (ref.ids?.ssrn)  return 'https://papers.ssrn.com/sol3/papers.cfm?abstract_id=' + ref.ids.ssrn;
+    if (meta?.url) return meta.url;
+    return null;
+  }
+
+  function restoreCiteTokens(html, tokens) {
+    return html.replace(/\u0001CITE(\d+)\u0001/g, (_, n) => {
+      const t = tokens[+n];
+      if (!t) return '';
+      if (t.hit) {
+        const url = refExternalUrl(t.hit.ref);
+        const attrs = `class="cite-ref" data-cite-idx="${t.hit.idx}"`;
+        if (url) {
+          return `<a ${attrs} href="${esc(url)}" target="_blank" rel="noopener noreferrer">${esc(t.display)}</a>`;
+        }
+        return `<span ${attrs}>${esc(t.display)}</span>`;
+      }
+      return `<span class="cite-ref cite-unknown" data-cite-missing="${esc(t.key)}" title="Unknown citation key">${esc(t.display)}</span>`;
+    });
+  }
+
+  function renderCiteMdPreview() {
+    const src = $('citeMdInput').value;
+    const preview = $('citeMdPreview');
+    if (!src.trim()) {
+      preview.innerHTML = '<em style="color:var(--text-muted)">Type Markdown on the left…</em>';
+      return;
+    }
+    const index = buildCitationIndex();
+    const { text, tokens } = extractCiteTokens(src, index);
+    const rendered = renderMdFull(text);
+    preview.innerHTML = restoreCiteTokens(rendered, tokens);
+    wireCiteRefHandlers(preview);
+  }
+
+  // Build HTML shown in the citation hover tooltip. Reuses the same layout as
+  // the main output (formatted reference, DOI/arXiv/PMID links, citation
+  // count, abstract, AI summary) so the preview popup matches what the user
+  // already sees in the main list.
+  function buildCiteTooltipHtml(ref) {
+    const meta = ref.key ? fetchedMeta[ref.key] : null;
+    const style = styleSelect.value;
+    const formatted = meta ? formatRef(meta, style) : null;
+    const abs = ref.key ? abstracts[ref.key] : null;
+    const sum = ref.key ? summaries[ref.key] : null;
+
+    let h = '';
+    if (ref.id) h += `<span class="cite-tt-id">${esc(ref.id)}</span>`;
+    if (formatted) {
+      h += `<span>${formatted}</span>`;
+      const links = [];
+      if (meta.doi) links.push(`<a href="https://doi.org/${esc(meta.doi)}" target="_blank" rel="noopener" style="color:var(--doi-color)">doi:${esc(meta.doi)}</a>`);
+      if (ref.ids?.arxiv && !meta.doi) links.push(`<a href="https://arxiv.org/abs/${esc(ref.ids.arxiv)}" target="_blank" rel="noopener" style="color:var(--arxiv-color)">arXiv:${esc(ref.ids.arxiv)}</a>`);
+      if (ref.ids?.pmid) links.push(`<a href="https://pubmed.ncbi.nlm.nih.gov/${esc(ref.ids.pmid)}/" target="_blank" rel="noopener" style="color:var(--pmid-color)">PMID:${esc(ref.ids.pmid)}</a>`);
+      if (meta.citationCount != null) {
+        const n = meta.citationCount;
+        links.push(`<span style="color:var(--text-muted)">${n} citation${n === 1 ? '' : 's'}</span>`);
+      }
+      if (links.length) h += `<div style="margin-top:4px;font-family:var(--font-mono);font-size:11px">${links.join(' &middot; ')}</div>`;
+    } else {
+      h += `<span class="cite-tt-err">${esc(ref.rest || ref.raw || 'Reference not yet resolved.')}</span>`;
+    }
+    if (abs) h += `<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border)"><strong>Abstract:</strong> ${esc(abs)}</div>`;
+    if (sum) h += `<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border)"><strong>AI Summary:</strong> ${renderMd(sum)}</div>`;
+    return h;
+  }
+
+  function positionCiteTooltip(e) {
+    const tt = $('citeTooltip');
+    const tw = tt.offsetWidth, th = tt.offsetHeight;
+    const ww = window.innerWidth, wh = window.innerHeight;
+    let l = e.clientX + 14, t = e.clientY + 16;
+    if (l + tw > ww - 10) l = e.clientX - tw - 14;
+    if (t + th > wh - 10) t = e.clientY - th - 10;
+    if (l < 10) l = 10;
+    if (t < 10) t = 10;
+    tt.style.left = l + 'px'; tt.style.top = t + 'px';
+  }
+
+  // Produce a fully self-contained HTML document that mirrors the preview:
+  // the rendered Markdown with interactive citation hovers. Only references
+  // actually cited in the preview are embedded (as a JSON payload) so the
+  // file stays reasonably small.
+  function buildCiteMdStandaloneHtml() {
+    const src = $('citeMdInput').value;
+    if (!src.trim()) return null;
+
+    const index = buildCitationIndex();
+    const { text, tokens } = extractCiteTokens(src, index);
+    const body = restoreCiteTokens(renderMdFull(text), tokens);
+
+    // Collect unique refs actually referenced in the document
+    const usedIdxs = new Set();
+    tokens.forEach(t => { if (t.hit) usedIdxs.add(t.hit.idx); });
+
+    const style = styleSelect.value;
+    const refsPayload = {};
+    usedIdxs.forEach(i => {
+      const ref = parsedRefs[i];
+      if (!ref) return;
+      const meta = ref.key ? fetchedMeta[ref.key] : null;
+      refsPayload[i] = {
+        id: ref.id || '',
+        formatted: meta ? formatRef(meta, style) : '',
+        raw: !meta ? (ref.rest || ref.raw || '') : '',
+        doi: meta?.doi || null,
+        arxiv: (ref.ids && ref.ids.arxiv) || null,
+        pmid: (ref.ids && ref.ids.pmid) || null,
+        citationCount: meta?.citationCount ?? null,
+        abstract: ref.key ? (abstracts[ref.key] || null) : null,
+        summary: ref.key ? (summaries[ref.key] || null) : null
+      };
+    });
+
+    const title = 'Citation document';
+    const css = `
+      :root {
+        --accent: #c9722e; --accent-light: #f5e9d8;
+        --text: #2c2418; --text-muted: #6b5d48;
+        --bg: #f5efe3; --bg-panel: #faf5ea;
+        --border: #d9ccb3; --error: #a33a3a;
+        --doi: #2b7bbd; --arxiv: #b9360d; --pmid: #1d7f5b;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0; padding: 48px 24px; background: var(--bg); color: var(--text);
+        font: 15px/1.7 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      }
+      main { max-width: 780px; margin: 0 auto; background: var(--bg-panel);
+        padding: 40px 48px; border: 1px solid var(--border); border-radius: 10px; }
+      h1, h2, h3 { margin: 1.2em 0 0.5em; line-height: 1.3; }
+      h1 { font-size: 24px; } h2 { font-size: 20px; } h3 { font-size: 16px; }
+      p { margin: 0 0 1em; }
+      ul, ol { margin: 0 0 1em 1.4em; }
+      a { color: var(--accent); }
+      code { background: var(--bg); padding: 1px 5px; border-radius: 3px;
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 90%; }
+      pre { background: var(--bg); padding: 12px 14px; border-radius: 6px; overflow: auto; }
+      pre code { background: none; padding: 0; }
+      .cite-ref {
+        display: inline-block;
+        background: var(--accent-light); color: var(--accent);
+        padding: 1px 5px; border-radius: 3px; font-size: 92%;
+        cursor: pointer; border: 1px solid transparent; transition: all .12s;
+        text-decoration: none;
+      }
+      a.cite-ref { text-decoration: none; }
+      .cite-ref:hover { border-color: var(--accent); background: #fff; text-decoration: none; }
+      .cite-ref.cite-unknown { background: #fce8e8; color: var(--error); cursor: not-allowed; }
+      #citeTooltip {
+        display: none; position: fixed; z-index: 9999; max-width: 520px;
+        background: var(--bg-panel); color: var(--text);
+        border: 1px solid var(--border); border-radius: 8px;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+        padding: 12px 14px; font-size: 13px; line-height: 1.55; pointer-events: none;
+      }
+      #citeTooltip .cite-tt-id { font-family: ui-monospace, monospace;
+        font-weight: 700; color: var(--accent); margin-right: 6px; }
+      #citeTooltip a.link-doi { color: var(--doi); }
+      #citeTooltip a.link-arxiv { color: var(--arxiv); }
+      #citeTooltip a.link-pmid { color: var(--pmid); }
+      footer { max-width: 780px; margin: 24px auto 0; font-size: 11px;
+        color: var(--text-muted); text-align: right; }
+    `.trim();
+
+    const runtimeJs = `
+      const REFS = __REFS_JSON__;
+      function esc(s){ const d=document.createElement('div'); d.textContent=s==null?'':String(s); return d.innerHTML; }
+      function build(ref){
+        let h='';
+        if (ref.id) h += '<span class="cite-tt-id">'+esc(ref.id)+'</span>';
+        if (ref.formatted) {
+          h += '<span>'+ref.formatted+'</span>';
+          const links = [];
+          if (ref.doi) links.push('<a class="link-doi" href="https://doi.org/'+esc(ref.doi)+'" target="_blank" rel="noopener">doi:'+esc(ref.doi)+'</a>');
+          if (ref.arxiv && !ref.doi) links.push('<a class="link-arxiv" href="https://arxiv.org/abs/'+esc(ref.arxiv)+'" target="_blank" rel="noopener">arXiv:'+esc(ref.arxiv)+'</a>');
+          if (ref.pmid) links.push('<a class="link-pmid" href="https://pubmed.ncbi.nlm.nih.gov/'+esc(ref.pmid)+'/" target="_blank" rel="noopener">PMID:'+esc(ref.pmid)+'</a>');
+          if (ref.citationCount != null) links.push('<span style="color:var(--text-muted)">'+ref.citationCount+' citation'+(ref.citationCount===1?'':'s')+'</span>');
+          if (links.length) h += '<div style="margin-top:4px;font-family:ui-monospace,monospace;font-size:11px">'+links.join(' &middot; ')+'</div>';
+        } else if (ref.raw) {
+          h += '<span style="font-style:italic;color:var(--text-muted)">'+esc(ref.raw)+'</span>';
+        }
+        if (ref.abstract) h += '<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border)"><strong>Abstract:</strong> '+esc(ref.abstract)+'</div>';
+        if (ref.summary)  h += '<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border)"><strong>AI Summary:</strong><br>'+esc(ref.summary).replace(/\\n/g,'<br>')+'</div>';
+        return h;
+      }
+      const tt = document.getElementById('citeTooltip');
+      function position(e){
+        const tw=tt.offsetWidth, th=tt.offsetHeight, ww=innerWidth, wh=innerHeight;
+        let l=e.clientX+14, t=e.clientY+16;
+        if (l+tw>ww-10) l=e.clientX-tw-14;
+        if (t+th>wh-10) t=e.clientY-th-10;
+        if (l<10) l=10; if (t<10) t=10;
+        tt.style.left=l+'px'; tt.style.top=t+'px';
+      }
+      document.querySelectorAll('.cite-ref').forEach(el => {
+        el.addEventListener('mouseenter', e => {
+          const idx = el.dataset.citeIdx;
+          if (idx != null && REFS[idx]) tt.innerHTML = build(REFS[idx]);
+          else tt.innerHTML = '<span style="color:var(--error);font-style:italic">Unknown citation key: <code>'+esc(el.dataset.citeMissing||'')+'</code></span>';
+          tt.style.display='block'; position(e);
+        });
+        el.addEventListener('mousemove', position);
+        el.addEventListener('mouseleave', () => { tt.style.display='none'; });
+      });
+    `.trim();
+
+    const safeRefsJson = JSON.stringify(refsPayload)
+      .replace(/</g, '\\u003c').replace(/>/g, '\\u003e').replace(/&/g, '\\u0026');
+
+    return `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${esc(title)}</title>
+<style>${css}</style>
+</head>
+<body>
+<main>${body}</main>
+<footer>Generated by RefFormat</footer>
+<div id="citeTooltip"></div>
+<script>${runtimeJs.replace('__REFS_JSON__', safeRefsJson)}<\/script>
+</body>
+</html>
+`;
+  }
+
+  function wireCiteRefHandlers(container) {
+    const tt = $('citeTooltip');
+    container.querySelectorAll('.cite-ref').forEach(el => {
+      el.addEventListener('mouseenter', e => {
+        const idx = el.dataset.citeIdx;
+        if (idx == null) {
+          tt.innerHTML = `<span class="cite-tt-err">Unknown citation key: <code>${esc(el.dataset.citeMissing || '')}</code></span>`;
+        } else {
+          const ref = parsedRefs[+idx];
+          if (!ref) return;
+          tt.innerHTML = buildCiteTooltipHtml(ref);
+        }
+        tt.style.display = 'block';
+        positionCiteTooltip(e);
+      });
+      el.addEventListener('mousemove', positionCiteTooltip);
+      el.addEventListener('mouseleave', () => { tt.style.display = 'none'; });
+    });
+  }
 
   /* ═══════════════════════════════════════════════════
      Render
@@ -1461,6 +2041,7 @@ Year: {year}
       html += `<div class="${cls}${abs?' has-abstract':''}" style="animation-delay:${i*40}ms" data-key="${esc(ref.key||'')}" data-idx="${i}">`;
       html += `<span class="ref-actions">`;
       if (meta && formatted) {
+        html += `<button class="btn-copy-ref-bib" data-idx="${i}" title="Copy this reference as BibTeX">bib</button>`;
         html += `<button class="btn-copy-ref" data-idx="${i}" title="Copy this reference">Copy</button>`;
         html += `<button class="btn-copy-ref-md" data-idx="${i}" title="Copy this reference as Markdown">md</button>`;
       }
@@ -1483,6 +2064,10 @@ Year: {year}
         if (meta.doi) html += `<br><a class="ref-link link-doi" href="https://doi.org/${esc(meta.doi)}" target="_blank" rel="noopener">doi:${esc(meta.doi)}</a>`;
         if (ref.ids.arxiv && !meta.doi) html += ` <a class="ref-link link-arxiv" href="https://arxiv.org/abs/${esc(ref.ids.arxiv)}" target="_blank" rel="noopener">arXiv:${esc(ref.ids.arxiv)}</a>`;
         if (ref.ids.pmid)  html += ` <a class="ref-link link-pmid" href="https://pubmed.ncbi.nlm.nih.gov/${esc(ref.ids.pmid)}/" target="_blank" rel="noopener">PMID:${esc(ref.ids.pmid)}</a>`;
+        if (meta.citationCount != null) {
+          const n = meta.citationCount;
+          html += ` <span class="ref-citations" title="Citation count">\u00B7 ${n} citation${n === 1 ? '' : 's'}</span>`;
+        }
       } else {
         html += `<span class="ref-text">${esc(ref.rest || ref.raw)}</span>`;
       }
@@ -1551,6 +2136,12 @@ Year: {year}
         copyOneRefMd(parseInt(btn.dataset.idx, 10), btn);
       });
     });
+    output.querySelectorAll('.btn-copy-ref-bib').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        copyOneRefBib(parseInt(btn.dataset.idx, 10), btn);
+      });
+    });
 
     // Summary collapse toggle (individual)
     output.querySelectorAll('.ref-summary-header').forEach(hdr => {
@@ -1613,18 +2204,21 @@ Year: {year}
     // 1) Reload resolved refs from the BibTeX cache in the textarea (source of truth).
     //    Clear the in-memory cache so edits the user made to the cache block are
     //    reflected in the output instead of being masked by stale internal state.
-    fetchedMeta = {};
-    abstracts = {};
-    const [, bibBlock] = splitBibtex(text);
-    if (bibBlock) {
-      const cached = parseBibtexBlock(bibBlock);
-      for (const [rkey, meta] of cached) {
-        fetchedMeta[rkey] = meta;
-      }
+    const cachedState = readBibtexCache(text);
+    fetchedMeta = cachedState.metaStore;
+    abstracts = cachedState.abstractStore;
+    summaries = cachedState.summaryStore;
+
+    // Reverse the rkey → citekey map so input lines can use [@citekey] /
+    // @citekey as a DOI substitute for entries that only exist in the cache.
+    const citeKeyMap = {};
+    for (const rkey of Object.keys(cachedState.citeKeyStore || {})) {
+      const ck = cachedState.citeKeyStore[rkey];
+      if (ck && !citeKeyMap[ck]) citeKeyMap[ck] = rkey;
     }
 
     // 2) Parse the reference lines
-    parsedRefs = parseLines(text);
+    parsedRefs = parseLines(text, citeKeyMap);
     renderOutput();
 
     // 3) Only resolve refs with a key that aren't already cached
@@ -1813,7 +2407,14 @@ Year: {year}
 
   async function runSummarization() {
     const toSum = parsedRefs.filter(r => r.key && fetchedMeta[r.key] && !summaries[r.key]);
-    if (!toSum.length) return;
+    if (!toSum.length) {
+      if (Object.keys(summaries).length) {
+        btnSummarize.classList.add('active');
+        btnSummarize.textContent = 'AI Summaries \u2713';
+        renderOutput();
+      }
+      return;
+    }
 
     btnSummarize.disabled = true;
     btnSummarize.innerHTML = '<span class="spinner"></span>';
@@ -1862,44 +2463,16 @@ Year: {year}
     btnSummarize.disabled = false;
     btnSummarize.classList.add('active');
     btnSummarize.textContent = 'AI Summaries \u2713';
+    updateTextareaBibtex();
     setTimeout(() => progressBar.classList.remove('active'), 500);
   }
 
   /* ═══ Copy ═══ */
-  function buildRefCopy(item) {
-    const id = item.querySelector('.ref-id');
-    const text = item.querySelector('.ref-text');
-    const links = item.querySelectorAll('.ref-link');
-    let plain = '', html = '';
-    if (id) { plain += id.textContent + ' '; html += id.textContent + ' '; }
-    if (text) { plain += text.textContent; html += text.innerHTML; }
-    if (links.length) {
-      plain += ' '; html += ' ';
-      links.forEach(l => {
-        plain += l.textContent + ' ';
-        html += `<a href="${l.href}">${l.textContent}</a> `;
-      });
-    }
-    return { plain: plain.trim(), html: html.trim() };
-  }
-
   function writeClip(plainText, htmlText) {
     return navigator.clipboard.write([new ClipboardItem({
       'text/plain': new Blob([plainText], { type: 'text/plain' }),
       'text/html': new Blob([htmlText], { type: 'text/html' })
     })]);
-  }
-
-  function doCopy() {
-    const items = output.querySelectorAll('.ref-item');
-    if (!items.length) return;
-    const parts = Array.from(items).map(buildRefCopy);
-    const plainText = parts.map(p => p.plain).join('\n\n');
-    const htmlText = parts.map(p => `<p style="margin:0 0 0.6em 0">${p.html}</p>`).join('\n');
-    writeClip(plainText, htmlText).then(() => {
-      btnCopy.textContent = 'Copied!';
-      setTimeout(() => { btnCopy.textContent = 'Copy'; }, 1500);
-    });
   }
 
   /* ═══ Copy as Markdown ═══ */
@@ -1927,13 +2500,81 @@ Year: {year}
     return line.trim();
   }
 
+  function getOutputOptions() {
+    return {
+      includeSummaries: exportIncludeSummaries.checked,
+      includeAbstracts: exportIncludeAbstracts.checked
+    };
+  }
+
+  function buildRefOutput(ref, i, options = getOutputOptions()) {
+    const style = styleSelect.value;
+    const meta = ref.key ? fetchedMeta[ref.key] : null;
+    const formatted = meta ? formatRef(meta, style) : null;
+    const abs = ref.key ? abstracts[ref.key] : null;
+    const sum = ref.key ? summaries[ref.key] : null;
+    let plain = '';
+    let html = '';
+    let md = '';
+
+    if (formatted) {
+      const baseMd = buildRefMd(ref, i);
+      plain = baseMd.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '$1');
+      html = `<div style="margin:0 0 0.6em 0">${ref.id ? `<span style="font-family:${'var(--font-mono)'};font-weight:700;margin-right:0.5em">${esc(ref.id)}</span>` : ''}${formatted}`;
+      if (meta.doi) html += ` <a href="https://doi.org/${esc(meta.doi)}">doi:${esc(meta.doi)}</a>`;
+      if (ref.ids?.arxiv && !meta.doi) html += ` <a href="https://arxiv.org/abs/${esc(ref.ids.arxiv)}">arXiv:${esc(ref.ids.arxiv)}</a>`;
+      if (ref.ids?.pmid) html += ` <a href="https://pubmed.ncbi.nlm.nih.gov/${esc(ref.ids.pmid)}/">PMID:${esc(ref.ids.pmid)}</a>`;
+      html += `</div>`;
+      md = baseMd;
+    } else {
+      plain = (ref.id ? ref.id + ' ' : '') + (ref.rest || ref.raw || '');
+      html = `<div style="margin:0 0 0.6em 0">${esc(plain)}</div>`;
+      md = plain.trim();
+    }
+
+    if (options.includeAbstracts && abs) {
+      plain += `\nAbstract: ${abs}`;
+      html += `<div style="margin:-0.2em 0 0.6em 0;padding-left:1em"><strong>Abstract:</strong> ${esc(abs)}</div>`;
+      md += `\n\nAbstract: ${abs}`;
+    }
+    if (options.includeSummaries && sum) {
+      plain += `\nAI Summary:\n${sum}`;
+      html += `<div style="margin:-0.2em 0 0.6em 0;padding-left:1em"><strong>AI Summary:</strong>${renderMd(sum)}</div>`;
+      md += `\n\nAI Summary:\n${sum}`;
+    }
+
+    return { plain: plain.trim(), html, md: md.trim() };
+  }
+
+  function doCopy() {
+    if (!parsedRefs.length) return;
+    const parts = parsedRefs.map((ref, i) => buildRefOutput(ref, i));
+    const plainText = parts.map(p => p.plain).join('\n\n\n');
+    const htmlText = parts.map(p => p.html).join('\n');
+    writeClip(plainText, htmlText).then(() => {
+      btnCopy.textContent = 'Copied!';
+      setTimeout(() => { btnCopy.textContent = 'Copy'; }, 1500);
+    });
+  }
+
   function doCopyMd() {
     if (!parsedRefs.length) return;
-    const md = parsedRefs.map((r, i) => buildRefMd(r, i)).join('\n');
+    const md = parsedRefs.map((r, i) => buildRefOutput(r, i).md).join('\n\n\n');
     navigator.clipboard.writeText(md).then(() => {
       btnCopyMd.textContent = 'Copied!';
       setTimeout(() => { btnCopyMd.textContent = 'Copy md'; }, 1500);
     });
+  }
+
+  function doSaveOutput() {
+    if (!parsedRefs.length) return;
+    const text = parsedRefs.map((r, i) => buildRefOutput(r, i).plain).join('\n\n\n');
+    const blob = new Blob([text], { type: 'text/plain' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'formatted-references.txt';
+    a.click();
+    URL.revokeObjectURL(a.href);
   }
 
   /* ═══ Per-item copy (small buttons inside each ref) ═══ */
@@ -1944,16 +2585,32 @@ Year: {year}
   }
 
   function copyOneRef(idx, btn) {
-    const item = output.querySelector(`.ref-item[data-idx="${idx}"]`);
-    if (!item) return;
-    const { plain, html } = buildRefCopy(item);
-    writeClip(plain, `<p style="margin:0">${html}</p>`).then(() => flashCopied(btn, 'Copy'));
+    const ref = parsedRefs[idx];
+    if (!ref) return;
+    const { plain, html } = buildRefOutput(ref, idx);
+    writeClip(plain, html).then(() => flashCopied(btn, 'Copy'));
   }
 
   function copyOneRefMd(idx, btn) {
     const ref = parsedRefs[idx];
     if (!ref) return;
-    navigator.clipboard.writeText(buildRefMd(ref, idx)).then(() => flashCopied(btn, 'md'));
+    navigator.clipboard.writeText(buildRefOutput(ref, idx).md).then(() => flashCopied(btn, 'md'));
+  }
+
+  function copyOneRefBib(idx, btn) {
+    const ref = parsedRefs[idx];
+    if (!ref || !ref.key) return;
+    const meta = fetchedMeta[ref.key];
+    if (!meta) return;
+    const customKey = (exportUseOriginalKeys && exportUseOriginalKeys.checked && ref.id) ? ref.id : null;
+    const bib = metaToBibtex(ref.key, meta, {
+      includeAbstracts: exportIncludeAbstracts.checked,
+      includeSummaries: exportIncludeSummaries.checked,
+      abstractText: abstracts[ref.key],
+      summaryText: summaries[ref.key],
+      customKey
+    });
+    navigator.clipboard.writeText(bib).then(() => flashCopied(btn, 'bib'));
   }
 
   /* ═══ Input panel: Copy / Download ═══ */
@@ -1970,6 +2627,105 @@ Year: {year}
     });
   }
 
+  function doAddMissingFromBib() {
+    const btn = $('btnAddMissingFromBib');
+    const original = btn.textContent;
+    const cached = readBibtexCache(input.value);
+    const cacheKeys = Object.keys(cached.metaStore);
+    if (!cacheKeys.length) {
+      btn.textContent = 'No cache'; setTimeout(() => btn.textContent = original, 1500); return;
+    }
+
+    const [refPart, bibPart] = splitBibtex(input.value);
+
+    // Identifiers already present in the reference list
+    const presentDois = new Set();
+    const presentArxiv = new Set();
+    const presentPmid = new Set();
+    const presentSsrn = new Set();
+    const presentCiteKeys = new Set();
+    const citeKeyTokenRe = /\[@([A-Za-z0-9_.:\-]+)\]|(?:^|[\s(,;:\[])@([A-Za-z0-9_.:\-]+)/g;
+    for (const line of refPart.split('\n')) {
+      const ids = extractIdentifiers(line);
+      if (ids.doi)   presentDois.add(ids.doi.toLowerCase());
+      if (ids.arxiv) presentArxiv.add(ids.arxiv.toLowerCase());
+      if (ids.pmid)  presentPmid.add(ids.pmid);
+      if (ids.ssrn)  presentSsrn.add(ids.ssrn);
+      let m;
+      citeKeyTokenRe.lastIndex = 0;
+      while ((m = citeKeyTokenRe.exec(line)) !== null) {
+        presentCiteKeys.add((m[1] || m[2]));
+      }
+    }
+
+    // For every cached entry that isn't already referenced, produce a new
+    // input line using the most specific identifier available, falling back
+    // to [@citekey] for entries with no external identifier.
+    const toAdd = [];
+    const seen = new Set();
+    for (const rkey of cacheKeys) {
+      const meta = cached.metaStore[rkey];
+      const ck   = cached.citeKeyStore && cached.citeKeyStore[rkey];
+      if (seen.has(rkey)) continue;
+
+      let identifier = null; // identifier token that will appear on the line
+      if (meta && meta.doi) {
+        const norm = meta.doi.toLowerCase();
+        if (presentDois.has(norm)) continue;
+        presentDois.add(norm);
+        identifier = 'doi:' + meta.doi;
+      } else if (rkey.startsWith('doi:')) {
+        const doi = rkey.slice(4);
+        const norm = doi.toLowerCase();
+        if (presentDois.has(norm)) continue;
+        presentDois.add(norm);
+        identifier = 'doi:' + doi;
+      } else if (rkey.startsWith('arxiv:')) {
+        const v = rkey.slice(6);
+        if (presentArxiv.has(v.toLowerCase())) continue;
+        presentArxiv.add(v.toLowerCase());
+        identifier = 'arXiv:' + v;
+      } else if (rkey.startsWith('pmid:')) {
+        const v = rkey.slice(5);
+        if (presentPmid.has(v)) continue;
+        presentPmid.add(v);
+        identifier = 'PMID:' + v;
+      } else if (rkey.startsWith('ssrn:')) {
+        const v = rkey.slice(5);
+        if (presentSsrn.has(v)) continue;
+        presentSsrn.add(v);
+        identifier = 'SSRN:' + v;
+      } else if (rkey.startsWith('citekey:') && ck) {
+        if (presentCiteKeys.has(ck)) continue;
+        presentCiteKeys.add(ck);
+        identifier = '[@' + ck + ']';
+      } else {
+        continue;
+      }
+
+      seen.add(rkey);
+      const prefix = ck ? '[' + ck + '] ' : '';
+      // Avoid a redundant `[ck]` prefix when the identifier itself is [@ck]
+      toAdd.push((identifier.startsWith('[@') ? '' : prefix) + identifier);
+    }
+
+    if (!toAdd.length) {
+      btn.textContent = 'Nothing missing'; setTimeout(() => btn.textContent = original, 1500); return;
+    }
+
+    const trimmedRef = refPart.replace(/\s+$/, '');
+    const newRefPart = (trimmedRef ? trimmedRef + '\n' : '') + toAdd.join('\n') + '\n';
+    const bibSuffix = bibPart ? ('\n\n' + BIBTEX_SEP + bibPart) : '';
+    input.value = newRefPart + bibSuffix;
+
+    // Refresh line count
+    const n = splitBibtex(input.value)[0].split('\n').filter(l=>l.trim()).length;
+    lineCountEl.textContent = n + ' line' + (n!==1?'s':'');
+
+    btn.textContent = '+' + toAdd.length;
+    setTimeout(() => btn.textContent = original, 1500);
+  }
+
   function doDownloadInput() {
     const text = input.value.trim();
     if (!text) return;
@@ -1983,6 +2739,7 @@ Year: {year}
 
   /* ═══ Events ═══ */
   btnFormat.addEventListener('click', doFormat);
+  btnSaveOutput.addEventListener('click', doSaveOutput);
   btnCopy.addEventListener('click', doCopy);
   btnAbort.addEventListener('click', () => {
     if (currentRefAC && !currentRefAC.signal.aborted) {
@@ -1996,10 +2753,82 @@ Year: {year}
 
   $('btnCopyInput').addEventListener('click', doCopyInput);
   $('btnDownloadInput').addEventListener('click', doDownloadInput);
+  $('btnAddMissingFromBib').addEventListener('click', doAddMissingFromBib);
+
+  // Cite MD modal
+  const citeMdModal = $('citeMdModal');
+  $('btnCiteMd').addEventListener('click', () => {
+    citeMdModal.classList.add('visible');
+    renderCiteMdPreview();
+    setTimeout(() => $('citeMdInput').focus(), 50);
+  });
+  $('citeMdClose').addEventListener('click', () => {
+    citeMdModal.classList.remove('visible');
+    $('citeTooltip').style.display = 'none';
+  });
+  citeMdModal.addEventListener('click', e => {
+    if (e.target === citeMdModal) {
+      citeMdModal.classList.remove('visible');
+      $('citeTooltip').style.display = 'none';
+    }
+  });
+  $('citeMdInput').addEventListener('input', renderCiteMdPreview);
+  $('citeMdExportHtml').addEventListener('click', () => {
+    const btn = $('citeMdExportHtml');
+    const html = buildCiteMdStandaloneHtml();
+    if (!html) {
+      const orig = btn.textContent;
+      btn.textContent = 'Nothing to export';
+      setTimeout(() => btn.textContent = orig, 1500);
+      return;
+    }
+    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'citations.html';
+    a.click();
+    URL.revokeObjectURL(a.href);
+  });
+  $('citeMdCopyHtml').addEventListener('click', () => {
+    const btn = $('citeMdCopyHtml');
+    const html = $('citeMdPreview').innerHTML;
+    navigator.clipboard.writeText(html).then(() => {
+      const orig = btn.textContent;
+      btn.textContent = 'Copied!';
+      setTimeout(() => btn.textContent = orig, 1200);
+    });
+  });
+
+  exportUseOriginalKeys.addEventListener('change', () => {
+    if (Object.keys(fetchedMeta).length) updateTextareaBibtex();
+  });
+
+  function buildOriginalKeysMap() {
+    const map = {};
+    for (const r of parsedRefs) {
+      if (r.key && r.id) map[r.key] = r.id;
+    }
+    return map;
+  }
 
   $('btnExportBib').addEventListener('click', () => {
-    const [, bibBlock] = splitBibtex(input.value);
-    const content = bibBlock.trim() || buildBibtexSection().trim();
+    const exportOptions = {
+      includeSummaries: exportIncludeSummaries.checked,
+      includeAbstracts: exportIncludeAbstracts.checked,
+      originalKeys: exportUseOriginalKeys.checked ? buildOriginalKeysMap() : null
+    };
+    let content = '';
+    if (Object.keys(fetchedMeta).length) {
+      content = bibtexSectionToExport(buildBibtexSection(exportOptions));
+    } else {
+      const cachedState = readBibtexCache(input.value);
+      content = bibtexSectionToExport(buildBibtexSection({
+        ...exportOptions,
+        metaStore: cachedState.metaStore,
+        abstractStore: cachedState.abstractStore,
+        summaryStore: cachedState.summaryStore
+      }));
+    }
     if (!content || content === BIBTEX_SEP) {
       alert('No BibTeX entries to export. Run Format first.');
       return;
@@ -2023,7 +2852,7 @@ Year: {year}
 
   btnClear.addEventListener('click', () => {
     if (input.value.trim() && !confirm('Clear all references and cached data?')) return;
-    input.value = '';
+    input.value = '\n\n' + BIBTEX_SEP + '\n';
     parsedRefs = []; fetchedMeta = {}; abstracts = {}; summaries = {}; statusInfo = {};
     btnAbstracts.classList.remove('active'); btnAbstracts.textContent = 'Abstracts';
     btnSummarize.classList.remove('active'); btnSummarize.textContent = 'AI Summaries';
@@ -2145,7 +2974,10 @@ Year: {year}
 [Jumper2021] Highly accurate protein structure prediction. 10.1038/s41586-021-03819-2
 [LDM2022] Rombach et al. High-Resolution Image Synthesis. https://arxiv.org/abs/2112.10752
 [5] Chen, L. (2022). Neural architecture search: A survey. J. of ML Research, 15(2), 112-134.
-[Manual] This is an already-formatted reference with no DOI or arXiv ID.`;
+[Manual] This is an already-formatted reference with no DOI or arXiv ID.
+
+` + BIBTEX_SEP + `
+`;
   lineCountEl.textContent = '6 lines';
 })();
 </script>
