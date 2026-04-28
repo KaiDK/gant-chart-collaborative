@@ -1,6 +1,7 @@
 MIT License
 
-Copyright (c) 2026 Pascal Cerfontaine
+Copyright (c) 2026 Pascal Cerfontaine (forked GanttChart.html 28/04/2026 from https://github.com/pcerf/webapps)
+Copyright (c) 2026 Kai Kreisköther (added collaborative functionality)
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
